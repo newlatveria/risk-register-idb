@@ -2,7 +2,7 @@
 
 A highly robust, client-side, browser-based Risk Register application built using pure HTML, CSS, and JavaScript, leveraging the power of **IndexedDB** for fast, reliable, and persistent data storage. Manage your project risks, compliance issues, and operational threats locally without needing a server or complex database setup.
 
-## ✨ Boast-Worthy Features
+## ✨ Features
 
 | Feature | Description |
 | :--- | :--- |
