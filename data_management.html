@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management Controls</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #d9534f;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #5bc0de;
+            margin-top: 30px;
+        }
+        .control-section {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        button {
+            padding: 10px 15px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin-right: 10px;
+        }
+        #clearDataButton {
+            background-color: #d9534f;
+        }
+        #clearDataButton:hover {
+            background-color: #c9302c;
+        }
+        #clearOwnersButton {
+            background-color: #f0ad4e;
+        }
+        #clearOwnersButton:hover {
+            background-color: #ec971f;
+        }
+        #backButton {
+            background-color: #5cb85c;
+            margin-top: 20px;
+        }
+        #backButton:hover {
+            background-color: #4cae4c;
+        }
+        #rawData {
+            width: 100%;
+            height: 300px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #e9ecef;
+        }
+        .warning-text {
+            color: #c9302c;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tool Data Management</h1>
+        <p>This page provides administrative controls for managing the data stored in your browser's local storage for the Risk Register tool.</p>
+
+        <div class="control-section">
+            <h2>🚨 Clear All Risk Data</h2>
+            <p class="warning-text">WARNING: This will permanently delete ALL risk entries from your browser's local storage. This action cannot be undone unless you have saved a CSV file.</p>
+            <button id="clearDataButton">Clear ALL Risks (LocalStorage: 'risks')</button>
+        </div>
+        
+        <div class="control-section">
+            <h2>⚠️ Clear Risk Owners List</h2>
+            <p>Clears the list of unique Risk Owners used to populate the dropdown filters. This will be automatically rebuilt the next time you load a CSV or add new risks.</p>
+            <button id="clearOwnersButton">Rebuild Owners List (LocalStorage: 'risks')</button>
+            <p style="font-size: 0.9em; margin-top: 10px;">Note: Since the owners are stored *inside* the 'risks' array, this button simply forces the application to reload the 'risks' array, which rebuilds the dropdowns.</p>
+        </div>
+
+        <h2>Raw Data View</h2>
+        <p>Current content of your primary data storage key ('risks'):</p>
+        <pre id="rawData"></pre>
+        
+        <button id="backButton">← Back to Risk Register</button>
+    </div>
+
+    <script>
+        const LOCAL_STORAGE_KEY = 'risks';
+
+        const rawDataPre = document.getElementById('rawData');
+        const clearDataButton = document.getElementById('clearDataButton');
+        const clearOwnersButton = document.getElementById('clearOwnersButton');
+        const backButton = document.getElementById('backButton');
+
+        function updateRawDataView() {
+            const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (data) {
+                try {
+                    // Display pretty-printed JSON
+                    rawDataPre.textContent = JSON.stringify(JSON.parse(data), null, 2);
+                } catch (e) {
+                    rawDataPre.textContent = `Error parsing data: ${data}`;
+                }
+            } else {
+                rawDataPre.textContent = "Local Storage key 'risks' is empty.";
+            }
+        }
+
+        clearDataButton.addEventListener('click', () => {
+            if (confirm("ARE YOU SURE? This will permanently delete ALL Risk Register data from this browser.")) {
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+                alert("All risk data has been cleared!");
+                updateRawDataView();
+            }
+        });
+        
+        clearOwnersButton.addEventListener('click', () => {
+            // Since the owners list is built dynamically from the 'risks' data 
+            // every time the main page loads, reloading the main page is sufficient 
+            // to "rebuild" the dropdown based on the current data.
+            alert("Risk Owners list will be rebuilt automatically on the next page load from the 'risks' data.");
+            window.location.href = 'index.html';
+        });
+
+        backButton.addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+
+        // Initial data load
+        document.addEventListener('DOMContentLoaded', updateRawDataView);
+    </script>
+</body>
+</html>
