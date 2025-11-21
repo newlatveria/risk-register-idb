@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Relationship Map</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f4; height: 100vh; display: flex; flex-direction: column; }
+        
+        .header {
+            background-color: #0056b3; color: white; padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10;
+        }
+        h1 { margin: 0; font-size: 20px; }
+        button {
+            padding: 8px 15px; background-color: #fff; color: #0056b3;
+            border: none; border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+        button:hover { background-color: #e2e6ea; }
+
+        /* The container for the network graph */
+        #riskNetwork {
+            flex-grow: 1;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+        }
+
+        /* Legend */
+        .legend {
+            position: absolute; bottom: 20px; left: 20px;
+            background: rgba(255,255,255,0.9); padding: 10px;
+            border: 1px solid #ccc; border-radius: 4px;
+            font-size: 12px; pointer-events: none;
+        }
+        .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🕸️ Risk Dependency Map</h1>
+        <button onclick="window.location.href='index.html'">← Back to Register</button>
+    </div>
+
+    <div id="riskNetwork"></div>
+
+    <div class="legend">
+        <div><span class="dot" style="background:#ff0000;"></span>Critical (16-25)</div>
+        <div><span class="dot" style="background:#ffa500;"></span>High (11-15)</div>
+        <div><span class="dot" style="background:#ffff00;"></span>Medium (6-10)</div>
+        <div><span class="dot" style="background:#008000;"></span>Low (1-5)</div>
+        <div style="margin-top:5px;"><strong>Arrow:</strong> Shows dependency/causality</div>
+    </div>
+
+    <script>
+        // --- DB CONFIGURATION (Same as index.html) ---
+        const DB_NAME = 'RiskRegisterDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'risks';
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                if (!window.indexedDB) { reject(new Error("No IndexedDB")); return; }
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = (e) => reject(e.target.error);
+                request.onsuccess = (e) => resolve(e.target.result);
+            });
+        }
+
+        async function getAllRisksDB() {
+            const db = await initDB();
+            return new Promise((resolve) => {
+                const tx = db.transaction([STORE_NAME], 'readonly');
+                const req = tx.objectStore(STORE_NAME).getAll();
+                req.onsuccess = (e) => resolve(e.target.result);
+            });
+        }
+
+        // --- Visualization Logic ---
+        
+        function getColorByRating(rating) {
+            switch (rating) {
+                case 'Critical': return { background: '#ffcccc', border: '#ff0000' };
+                case 'High': return { background: '#ffeeba', border: '#ffa500' };
+                case 'Medium': return { background: '#ffffcc', border: '#cccc00' };
+                case 'Low': return { background: '#d4edda', border: '#008000' };
+                default: return { background: '#e2e3e5', border: '#666666' };
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const risks = await getAllRisksDB();
+            
+            if (risks.length === 0) {
+                document.getElementById('riskNetwork').innerHTML = '<p style="text-align:center; margin-top:50px;">No risks found to visualize.</p>';
+                return;
+            }
+
+            const nodes = [];
+            const edges = [];
+            const addedIds = new Set();
+
+            // 1. Create Nodes
+            risks.forEach(risk => {
+                const colors = getColorByRating(risk.riskRatingResidual);
+                
+                // Truncate long titles for the visual node
+                let labelText = `#${risk.riskNumber}\n${risk.riskItem}`;
+                if (labelText.length > 25) labelText = labelText.substring(0, 25) + '...';
+
+                nodes.push({
+                    id: risk.riskNumber,
+                    label: labelText,
+                    title: `Owner: ${risk.riskOwner}\nStatus: ${risk.riskStatus}\nScore: ${risk.riskScoreResidual}`, // Tooltip
+                    color: colors,
+                    shape: 'box',
+                    font: { multi: true }
+                });
+                addedIds.add(risk.riskNumber);
+            });
+
+            // 2. Create Edges (Relationships)
+            risks.forEach(risk => {
+                // Check if the 'relatedRisks' field exists and has data
+                // NOTE: You must add a field named 'relatedRisks' to your form/data logic for this to work fully.
+                // Currently assuming comma-separated string "1001, 1002"
+                if (risk.relatedRisks && risk.relatedRisks.trim() !== '') {
+                    const links = risk.relatedRisks.split(',').map(s => s.trim());
+                    
+                    links.forEach(targetId => {
+                        // Only draw line if the target risk actually exists
+                        if (addedIds.has(targetId)) {
+                            edges.push({
+                                from: risk.riskNumber,
+                                to: targetId,
+                                arrows: 'to', // Directional arrow
+                                color: { color: '#848484' }
+                            });
+                        }
+                    });
+                }
+                
+                // OPTIONAL: Implicit relationships (e.g., same Category)
+                // You could create 'cluster' nodes here if you wanted deeper analysis
+            });
+
+            // 3. Render Network
+            const container = document.getElementById('riskNetwork');
+            const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+            const options = {
+                physics: {
+                    enabled: true,
+                    solver: 'forceAtlas2Based', // Physics engine ensuring nodes don't overlap
+                    stabilization: { iterations: 150 }
+                },
+                layout: {
+                    randomSeed: 2 // Ensures map looks the same every time you load it
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 200
+                }
+            };
+
+            const network = new vis.Network(container, data, options);
+            
+            // Optional: Double click node to edit
+            network.on("doubleClick", function (params) {
+                if (params.nodes.length > 0) {
+                    const riskId = params.nodes[0];
+                    window.location.href = `risk_form.html?id=${riskId}`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

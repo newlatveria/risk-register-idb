@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Risk Register - Main View</title>
     <style>
-        /* ... (CSS remains the same) ... */
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -36,7 +35,7 @@
         /* --- FILTER CONTROLS --- */
         .filter-actions {
             display: flex;
-            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            flex-wrap: wrap; 
             gap: 20px;
             padding: 10px 0;
             margin-bottom: 20px;
@@ -52,7 +51,7 @@
             color: #555;
         }
 
-        /* --- DATA MANAGEMENT SECTION (Moved to the bottom) --- */
+        /* --- DATA MANAGEMENT SECTION --- */
         .data-management-section {
             padding: 20px;
             margin-top: 20px;
@@ -66,6 +65,19 @@
             border-bottom: 1px solid #007bff;
             padding-bottom: 5px;
         }
+        
+        /* New File Info Style */
+        .file-info {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 15px;
+            padding: 8px 12px;
+            background-color: #fff;
+            border-left: 4px solid #28a745;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
         .file-controls-group {
             display: flex;
             flex-wrap: wrap;
@@ -133,12 +145,25 @@
         #manageDataButton:hover {
             background-color: #c9302c;
         }
+        /* Load from file (user input) */
         #loadDataButton {
             background-color: #5cb85c;
+            position: relative; 
+            min-width: 120px; 
         }
         #loadDataButton:hover {
             background-color: #4cae4c;
         }
+        /* Load Default File */
+        #loadDefaultFileButton {
+            background-color: #ff9800;
+            position: relative;
+            min-width: 120px;
+        }
+        #loadDefaultFileButton:hover {
+             background-color: #e68900;
+        }
+
         #saveJsonButton {
             background-color: #007bff;
         }
@@ -150,6 +175,36 @@
         }
         #saveCsvButton:hover {
             background-color: #ec971f;
+        }
+
+        /* --- Loading Indicator CSS --- */
+        .loading-indicator {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ffffff; 
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin-left: 5px;
+        }
+
+        /* Show the spinner when loading is active */
+        #loadDataButton.loading .button-text, #loadDefaultFileButton.loading .button-text {
+            visibility: hidden;
+            display: block;
+        }
+        #loadDataButton.loading .loading-indicator, #loadDefaultFileButton.loading .loading-indicator {
+            display: inline-block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* --- SCROLL CONTAINER & TABLE STYLES --- */
@@ -177,7 +232,7 @@
             z-index: 10;
         }
         table tbody td {
-            padding: 0; /* Important for inline editing to fill the cell */
+            padding: 0; 
             border: 1px solid #ddd;
             vertical-align: top;
             height: 40px; 
@@ -222,9 +277,9 @@
         #riskTable tbody tr:nth-child(odd) td:first-child, #riskTable tbody tr:nth-child(odd) td:last-child { background-color: #fff; }
 
         /* Review Date Color Coding */
-        .due-soon { background-color: #ffeb3b; } /* Yellow/Amber for 7-30 days */
-        .due-next-week { background-color: #ffc107; } /* Orange for 0-7 days */
-        .overdue { background-color: #f44336; color: white; } /* Red for overdue */
+        .due-soon { background-color: #ffeb3b; } 
+        .due-next-week { background-color: #ffc107; } 
+        .overdue { background-color: #f44336; color: white; } 
     </style>
 </head>
 <body>
@@ -233,6 +288,8 @@
 
         <div class="top-actions">
             <button id="addNewRiskButton">➕ Add New Risk</button>
+            <button onclick="window.location.href='risk_map.html'" style="background-color: #6610f2;">🕸️ View Risk Map</button>
+            <button onclick="window.location.href='all_risks.html'" style="background-color: #17a2b8;">📄 View Full Report</button>
             <button id="manageDataButton" title="Access administrative controls for data deletion and maintenance.">
                 Manage Data (Advanced)
             </button>
@@ -270,8 +327,8 @@
                 <select id="reviewDateFilter" onchange="filterTable()">
                     <option value="">Any Time</option>
                     <option value="Overdue">Overdue</option>
-                    <option value="DueSoon">Due in 7-30 Days</option>
                     <option value="DueNextWeek">Due in 0-7 Days</option>
+                    <option value="DueSoon">Due in 7-28 Days</option> 
                 </select>
             </div>
         </div>
@@ -299,7 +356,9 @@
                         <th class="sticky-header">Prob (Residual)</th>
                         <th class="sticky-header">Impact (Residual)</th>
                         <th class="sticky-header">Score (Residual)</th>
-                        <th class="sticky-header">Actions Text</th>
+                        <th class="sticky-header" data-key="actionsText">Actions Text (Current)</th>
+                        <th class="sticky-header">Notes / History</th>
+                        
                         <th class="sticky-header">Impacted Area</th>
                         <th class="sticky-header">Risk Category</th>
                         <th class="sticky-header">Related Laws/Regs</th>
@@ -319,12 +378,22 @@
         
         <div class="data-management-section">
             <h2>Data Import / Export</h2>
+            
+            <p id="lastFileDisplay" class="file-info">Last Imported Source: None</p>
+
             <p>Loading a file will **replace all existing data** in the register.</p>
             
             <div class="file-controls-group">
                 <div class="load-controls">
                     <input type="file" id="fileInput" accept=".json, .csv" title="Select either a JSON or CSV file to load data.">
-                    <button id="loadDataButton" title="Load data from the selected file (JSON or CSV).">Load Data</button>
+                    <button id="loadDataButton" title="Load data from the selected file (JSON or CSV).">
+                        <span class="button-text">Load Data (File)</span>
+                        <div class="loading-indicator"></div>
+                    </button>
+                    <button id="loadDefaultFileButton" title="Load the default risk register file from /data/default_risks.json.">
+                        <span class="button-text">Load Default</span>
+                        <div class="loading-indicator"></div>
+                    </button>
                 </div>
             </div>
             
@@ -339,7 +408,10 @@
     </div>
 
     <script>
-        // --- IndexedDB Configuration and Wrapper ---
+        
+        // =========================================================
+        // === MODULE 1: IndexedDB Configuration and CRUD Wrappers ===
+        // =========================================================
         const DB_NAME = 'RiskRegisterDB';
         const DB_VERSION = 1;
         const STORE_NAME = 'risks';
@@ -372,10 +444,8 @@
 
                 request.onupgradeneeded = (event) => {
                     const db = event.target.result;
-                    // Create object store with 'riskNumber' as the key path for uniqueness/retrieval
                     if (!db.objectStoreNames.contains(STORE_NAME)) {
                         const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'riskNumber' });
-                        // Add an index for quick lookups or sorting (optional, but good practice)
                         objectStore.createIndex('riskOwner', 'riskOwner', { unique: false });
                         console.log("[IDB] Object store created/upgraded.");
                     }
@@ -412,7 +482,7 @@
             return new Promise((resolve, reject) => {
                 const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
-                const request = store.put(risk); // put handles both add and update
+                const request = store.put(risk); 
 
                 request.onerror = (event) => reject(event.target.error);
                 request.onsuccess = () => resolve();
@@ -427,46 +497,67 @@
                 
                 // Clear existing risks first if this is an import
                 const clearRequest = store.clear();
+                
+                clearRequest.onerror = (event) => {
+                    console.error("[IDB CLEAR] Error clearing store:", event.target.error);
+                    reject(event.target.error);
+                };
+                
                 clearRequest.onsuccess = () => {
                     risks.forEach(risk => {
                         store.put(risk);
                     });
-                    transaction.oncomplete = () => resolve();
-                    transaction.onerror = (event) => reject(event.target.error);
+                    transaction.oncomplete = () => {
+                        console.log("[IDB PUT] Bulk insert complete.");
+                        resolve();
+                    };
+                    transaction.onerror = (event) => {
+                        console.error("[IDB PUT] Error during bulk insert:", event.target.error);
+                        reject(event.target.error);
+                    };
                 };
-                clearRequest.onerror = (event) => reject(event.target.error);
             });
         }
 
-        // --- Global Variables and DOM Elements ---
+        // ==================================================
+        // === MODULE 2: Global Variables and Configuration ===
+        // ==================================================
         const riskTableBody = document.querySelector('#riskTable tbody');
         const fileInput = document.getElementById('fileInput'); 
         const loadDataButton = document.getElementById('loadDataButton'); 
+        const loadDefaultFileButton = document.getElementById('loadDefaultFileButton'); 
         const saveCsvButton = document.getElementById('saveCsvButton');
         const saveJsonButton = document.getElementById('saveJsonButton');
         const addNewRiskButton = document.getElementById('addNewRiskButton');
         const manageDataButton = document.getElementById('manageDataButton');
         
+        // NEW: Element for displaying last imported file name
+        const lastFileDisplay = document.getElementById('lastFileDisplay');
+
         // FILTER ELEMENTS
         const statusFilter = document.getElementById('statusFilter');
         const ratingFilter = document.getElementById('ratingFilter');
         const ownerFilter = document.getElementById('ownerFilter');
         const reviewDateFilter = document.getElementById('reviewDateFilter');
-
-        let risks = []; // Main array will now be populated by the async load function
-        let riskOwners = []; // Master list of unique risk owners
+        
+        // CONFIGURATION
+        const DEFAULT_RISK_FILE_PATH = 'data/default_risks.json'; 
+        let risks = []; 
+        let riskOwners = []; 
 
         // --- Configuration ---
         const RISK_STATUSES = ["Open", "In Progress", "Closed", "On Hold"];
 
+        // CSV HEADERS AND MAPS (Used for export and import mapping)
         const csvHeaders = [
             "Risk Number", "Date Raised", "Raised By", "Risk Item", "Risk Issue", "Impact Statement",
             "Impacted Area", "Risk Category", "Related Laws/Regulations", "Non-Compliance Impact",
             "Probability (Initial)", "Impact (Initial)",
             "Initial Risk Score", "Initial Risk Rating", "Outcome Definition", "Risk Owner",
             "Controls/Mitigations", "Probability (Residual)", "Impact (Residual)",
-            "Residual Risk Score", "Residual Risk Rating", "Actions", "Risk Status",
-            "Review Date", "Age (Days)",
+            "Residual Risk Score", "Residual Risk Rating", 
+            "Actions Text (Current)", "Notes / History", 
+            "Risk Status", "Review Date", "Age (Days)",
             "Source Department", "Source Last Review Date", "Source Due Date"
         ];
         const riskKeyToCsvHeaderMap = {
@@ -475,8 +566,9 @@
             riskCategory: "Risk Category", relatedLaws: "Related Laws/Regulations", nonComplianceImpact: "Non-Compliance Impact", 
             probabilityInitial: "Probability (Initial)", impactInitial: "Impact (Initial)", riskScoreInitial: "Initial Risk Score", 
             riskRatingInitial: "Initial Risk Rating", outcomeDefinition: "Outcome Definition", riskOwner: "Risk Owner", 
-            controlsMitigations: "Controls/Mitigations", probabilityResidual: "Probability (Residual)", impactResidual: "Impact (Impact)", 
-            riskScoreResidual: "Residual Risk Score", riskRatingResidual: "Residual Risk Rating", actions: "Actions", 
+            controlsMitigations: "Controls/Mitigations", probabilityResidual: "Probability (Residual)", impactResidual: "Impact (Residual)", 
+            riskScoreResidual: "Residual Risk Score", riskRatingResidual: "Residual Risk Rating", 
+            actionsText: "Actions Text (Current)", notesHistory: "Notes / History", 
             riskStatus: "Risk Status", reviewDate: "Review Date",
             sourceDepartment: "Source Department", sourceLastReviewDate: "Source Last Review Date", sourceDueDate: "Source Due Date"
         };
@@ -484,7 +576,50 @@
             Object.entries(riskKeyToCsvHeaderMap).map(([key, value]) => [value, key])
         );
 
-        // --- Core Functions ---
+        // ===========================================
+        // === MODULE 3: Core Utility Functions (Date, Math, Risk) ===
+        // ===========================================
+        
+        function parseUKDate(dateString) {
+            if (!dateString) return null;
+            dateString = String(dateString).trim();
+
+            let date = new Date(dateString);
+            if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
+                return date;
+            }
+
+            const parts = dateString.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+            if (parts) {
+                date = new Date(parts[3], parts[2] - 1, parts[1]); 
+                if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
+                    return date;
+                }
+            }
+            
+            return null;
+        }
+
+        function getFormattedDate(dateValue) {
+            if (!dateValue) return '';
+            
+            let date;
+            if (dateValue instanceof Date) {
+                date = dateValue;
+            } else {
+                date = parseUKDate(dateValue);
+            }
+
+            if (!date || isNaN(date.getTime())) {
+                return '';
+            }
+
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
+        }
         
         function getRiskRatingClass(rating) {
             switch (rating) {
@@ -520,7 +655,7 @@
                     reviewClass = 'overdue';
                 } else if (reviewDaysDiff <= 7) {
                     reviewClass = 'due-next-week';
-                } else if (reviewDaysDiff <= 30) {
+                } else if (reviewDaysDiff <= 28) { 
                     reviewClass = 'due-soon';
                 }
             }
@@ -528,16 +663,6 @@
             return { ageDays, reviewDaysDiff, reviewClass };
         }
 
-        function getFormattedDate(date) {
-            if (!date) return '';
-            const d = new Date(date);
-            if (isNaN(d)) return date; 
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-        
         function getRiskRating(score) {
             if (score <= 5) return 'Low';
             if (score <= 10) return 'Medium';
@@ -556,34 +681,64 @@
             return (p && i && !isNaN(p) && !isNaN(i)) ? p * i : '';
         }
 
-        /**
-         * Replaces localStorage.loadRisks()
-         */
-        async function loadRisks() {
+        // ============================================
+        // === MODULE 4: Data Load, Filter, and Render ===
+        // ============================================
+
+        function updateLastFileDisplay() {
+            const lastFile = localStorage.getItem('lastImportedFile') || 'None';
+            lastFileDisplay.innerHTML = `Last Imported Source: <strong>${lastFile}</strong>`;
+        }
+
+        function applyDefaultReviewDateFilter() {
+            const reviewFilterValue = localStorage.getItem('reviewDateFilter') || '';
+            
+            if (!['Overdue', 'DueNextWeek', 'DueSoon'].includes(reviewFilterValue)) {
+                reviewDateFilter.value = 'Overdue'; 
+                localStorage.setItem('reviewDateFilter', 'Overdue');
+                console.log("[FILTER] Applying default filter: Overdue.");
+            } else {
+                reviewDateFilter.value = reviewFilterValue;
+                console.log(`[FILTER] Retaining existing filter: ${reviewFilterValue}.`);
+            }
+            
+            renderRisks();
+        }
+
+        async function loadRisks(buttonElement = loadDataButton) {
+            buttonElement.classList.add('loading');
+            riskTableBody.innerHTML = '<tr><td colspan="29" style="text-align:center; padding: 20px;">Loading data... Please wait.</td></tr>';
+            
             try {
-                // Initialize DB if not already done
                 await initDB(); 
                 
-                // Fetch all risks from IndexedDB
                 const storedRisks = await getAllRisksDB();
                 risks = storedRisks;
 
                 console.log(`[IDB LOAD] Data loaded from IndexedDB. Total risks: ${risks.length}`);
                 
-                // Ensure default fields exist
                 risks.forEach(risk => {
-                    // We rely on risk_form.html to ensure all fields are saved, 
-                    // but these checks are good for older data compatibility
+                    if (risk.actions) {
+                        risk.actionsText = risk.actions; 
+                        risk.notesHistory = '';
+                        delete risk.actions;
+                    }
+                    if (risk.actionsText === undefined) risk.actionsText = '';
+                    if (risk.notesHistory === undefined) risk.notesHistory = '';
                     if (risk.relatedLaws === undefined) risk.relatedLaws = '';
-                    // ... (rest of field checks are implicitly handled by the data structure)
                 });
                 
                 updateRiskOwnersList();
                 populateOwnerFilter(); 
-                renderRisks(); 
+                
+                applyDefaultReviewDateFilter(); 
+                updateLastFileDisplay(); // Update the filename indicator
+                
             } catch (error) {
                 console.error('[IDB LOAD] Failed to load risks:', error);
                 alert('Failed to load risk data from the database. See console for details.');
+            } finally {
+                buttonElement.classList.remove('loading');
             }
         }
         
@@ -600,31 +755,34 @@
             if (!Array.isArray(loadedRisks) || loadedRisks.length === 0) return loadedRisks;
             
             console.log('[DUPE CHECK] Starting unique number enforcement.');
-            const seenNumbers = new Set(risks.map(r => String(r.riskNumber))); // Existing numbers in DB
+            const seenNumbers = new Set(risks.map(r => String(r.riskNumber))); 
             let nextUniqueNumber = getNextRiskNumber(risks); 
             let duplicatesFound = 0;
 
             for (const risk of loadedRisks) {
                 let riskNum = String(risk.riskNumber).trim();
                 
-                // 1. Validate number: If not valid OR if it already exists in the entire register (DB + new batch)
                 if (!riskNum || isNaN(parseInt(riskNum, 10)) || seenNumbers.has(riskNum)) {
                     riskNum = String(nextUniqueNumber);
                     duplicatesFound++;
                 }
                 
-                // 2. Ensure nextUniqueNumber is always the max seen number + 1
                 if (parseInt(riskNum, 10) >= nextUniqueNumber) {
                     nextUniqueNumber = parseInt(riskNum, 10) + 1;
                 }
 
-                // Apply the corrected number and update pointers
                 risk.riskNumber = riskNum;
                 seenNumbers.add(riskNum);
+                
+                if (risk.actions) {
+                    risk.actionsText = risk.actions;
+                    risk.notesHistory = '';
+                    delete risk.actions;
+                }
             }
             
             if (duplicatesFound > 0) {
-                console.warn(`NOTICE: ${duplicatesFound} duplicate or invalid Risk Numbers were corrected.`);
+                console.warn(`NOTICE: ${duplicatesFound} duplicate or invalid Risk Numbers were corrected/assigned.`);
             }
             
             console.log(`[DUPE CHECK] Finished. ${duplicatesFound} risks corrected.`);
@@ -638,8 +796,6 @@
 
         function populateOwnerFilter() {
             const owners = riskOwners; 
-            console.log(`[FILTER] Populating owner filter with ${owners.length} unique owners.`);
-            
             const currentOwner = ownerFilter.value; 
             ownerFilter.innerHTML = '<option value="">All Owners</option>';
             
@@ -656,12 +812,17 @@
         }
 
         function filterTable() {
-            console.log(`[FILTER] Filtering table. Status: ${statusFilter.value}, Rating: ${ratingFilter.value}, Owner: ${ownerFilter.value}, Review: ${reviewDateFilter.value}`);
-            renderRisks(); // Render uses the global `risks` array, which is updated by `loadRisks`
+            localStorage.setItem('reviewDateFilter', reviewDateFilter.value);
+            renderRisks(); 
         }
 
         function renderRisks() {
             riskTableBody.innerHTML = '';
+            
+            if (risks.length === 0) {
+                 riskTableBody.innerHTML = '<tr><td colspan="29" style="text-align:center; padding: 20px;">No risks found. Import data or add a new risk.</td></tr>';
+                 return;
+            }
 
             const selectedStatus = statusFilter.value;
             const selectedRating = ratingFilter.value;
@@ -679,9 +840,9 @@
                 if (selectedReview === 'Overdue') {
                     reviewMatch = metrics.reviewDaysDiff < 0;
                 } else if (selectedReview === 'DueSoon') {
-                    reviewMatch = metrics.reviewDaysDiff >= 7 && metrics.reviewDaysDiff <= 30;
+                    reviewMatch = metrics.reviewDaysDiff > 7 && metrics.reviewDaysDiff <= 28;
                 } else if (selectedReview === 'DueNextWeek') {
-                    reviewMatch = metrics.reviewDaysDiff >= 0 && metrics.reviewDaysDiff < 7;
+                    reviewMatch = metrics.reviewDaysDiff >= 0 && metrics.reviewDaysDiff <= 7;
                 }
 
                 return statusMatch && ratingMatch && ownerMatch && reviewMatch;
@@ -690,22 +851,19 @@
             console.log(`[RENDER] Rendering ${filteredRisks.length} risks.`);
 
             filteredRisks.forEach((risk) => {
-                // IMPORTANT: The index is now the riskNumber (the keyPath) for IndexedDB lookup
                 const riskNumber = risk.riskNumber; 
                 const row = riskTableBody.insertRow();
                 
                 const metrics = calculateDateMetrics(risk.dateRaised, risk.reviewDate);
 
-                // Helper to create a cell with a text div inside, ready for inline editing
                 const createDisplayCell = (value, key) => {
                     const cell = row.insertCell();
-                    cell.setAttribute('data-risk-number', riskNumber); // Use riskNumber as the identifier
+                    cell.setAttribute('data-risk-number', riskNumber); 
                     cell.setAttribute('data-key', key);
                     
                     const div = document.createElement('div');
                     div.textContent = value;
                     
-                    // Add date highlighting class
                     if (key === 'reviewDate') {
                         div.className = metrics.reviewClass;
                     }
@@ -714,7 +872,6 @@
                     return cell;
                 };
 
-                // === KRI-FIRST VIEW CELLS ===
                 row.insertCell().innerHTML = `<div>${risk.riskNumber}</div>`;
                 row.insertCell().innerHTML = `<div>${risk.riskItem}</div>`;
                 createDisplayCell(risk.riskOwner, 'riskOwner').ondblclick = handleInlineEdit;
@@ -722,7 +879,6 @@
                 createDisplayCell(risk.riskStatus, 'riskStatus').ondblclick = handleInlineEdit;
                 createDisplayCell(risk.reviewDate, 'reviewDate').ondblclick = handleInlineEdit;
                 
-                // === DETAIL COLUMNS ===
                 row.insertCell().innerHTML = `<div>${metrics.ageDays}</div>`;
                 row.insertCell().innerHTML = `<div>${risk.dateRaised}</div>`;
                 row.insertCell().innerHTML = `<div>${risk.raisedBy}</div>`;
@@ -735,7 +891,10 @@
                 row.insertCell().innerHTML = `<div>${risk.probabilityResidual}</div>`;
                 row.insertCell().innerHTML = `<div>${risk.impactResidual}</div>`;
                 row.insertCell().innerHTML = `<div>${risk.riskScoreResidual}</div>`;
-                row.insertCell().innerHTML = `<div>${risk.actions}</div>`;
+                
+                createDisplayCell(risk.actionsText, 'actionsText').ondblclick = handleInlineEdit;
+                row.insertCell().innerHTML = `<div>${risk.notesHistory}</div>`;
+
                 row.insertCell().innerHTML = `<div>${risk.impactedArea}</div>`;
                 row.insertCell().innerHTML = `<div>${risk.riskCategory}</div>`;
                 row.insertCell().innerHTML = `<div>${risk.relatedLaws}</div>`;
@@ -745,18 +904,18 @@
                 row.insertCell().innerHTML = `<div>${risk.sourceLastReviewDate}</div>`;
                 row.insertCell().innerHTML = `<div>${risk.sourceDueDate}</div>`;
 
-                // Actions
                 const actionCell = row.insertCell();
                 const editButton = document.createElement('button');
                 editButton.textContent = 'Edit';
                 editButton.className = 'edit-btn';
-                // Pass the riskNumber instead of the array index
                 editButton.onclick = () => window.location.href = `risk_form.html?id=${riskNumber}`; 
                 actionCell.appendChild(editButton);
             });
         }
 
-        // --- Inline Editing Logic (Updated for IndexedDB) ---
+        // ==================================
+        // === MODULE 5: Inline Editing Logic ===
+        // ==================================
         async function handleInlineEdit(event) {
             const cell = event.currentTarget;
             if (cell.querySelector('input') || cell.querySelector('select')) return;
@@ -764,11 +923,10 @@
             const riskNumber = cell.getAttribute('data-risk-number');
             const key = cell.getAttribute('data-key');
             
-            // Fetch the latest risk data to ensure we update the current state
             const risk = await getRiskByNumberDB(riskNumber);
             if (!risk) {
                 console.error(`Risk #${riskNumber} not found.`);
-                await loadRisks(); // Reload data
+                await loadRisks();
                 return;
             }
 
@@ -791,7 +949,7 @@
             } else if (key === 'riskOwner') {
                 editor = document.createElement('select');
                 
-                const currentOwners = riskOwners;
+                const currentOwners = [...riskOwners];
                 if (currentValue && !currentOwners.includes(currentValue)) {
                     currentOwners.push(currentValue);
                     currentOwners.sort();
@@ -813,6 +971,10 @@
                 editor = document.createElement('input');
                 editor.type = 'date';
                 editor.value = currentValue;
+            } else if (key === 'actionsText') { 
+                editor = document.createElement('input');
+                editor.type = 'text';
+                editor.value = currentValue;
             } else {
                 return; 
             }
@@ -822,21 +984,17 @@
             cell.appendChild(editor);
 
             const saveEdit = async (newValue) => {
-                // Check if the cell has been removed/replaced
                 if (!cell.contains(editor)) return; 
 
                 if (String(newValue) !== String(currentValue)) {
-                    // Update the local risk object, then save to DB
-                    risk[key] = newValue;
+                    risk[key] = (key.includes('Date')) ? getFormattedDate(newValue) : newValue;
                     
                     try {
                         await updateRiskInDB(risk);
                         console.log(`[IDB] Updated risk #${riskNumber} field: ${key}`);
                         
-                        // Re-load and re-render the entire table asynchronously after DB update
                         await loadRisks(); 
                         
-                        // Re-run filters if owner changed
                         if (key === 'riskOwner') {
                             updateRiskOwnersList();
                             populateOwnerFilter();
@@ -848,7 +1006,6 @@
                 } else {
                     originalDiv.style.display = '';
                 }
-                // Remove editor regardless of whether a change was saved
                 if (cell.contains(editor)) {
                     cell.removeChild(editor);
                 }
@@ -857,7 +1014,6 @@
             editor.addEventListener('change', (e) => saveEdit(e.target.value));
             
             editor.addEventListener('blur', (e) => {
-                // Use a short timeout to allow the 'change' event to fire first (for select elements)
                 setTimeout(() => {
                     saveEdit(e.target.value);
                 }, 50);
@@ -872,7 +1028,9 @@
         }
 
 
-        // --- File Handling Functions (Updated for IndexedDB) ---
+        // ========================================
+        // === MODULE 6: File I/O (Download, JSON Load) ===
+        // ========================================
 
         function downloadFile(content, filename, mimeType) {
             const blob = new Blob([content], { type: `${mimeType};charset=utf-8;` });
@@ -892,8 +1050,6 @@
             }
         }
 
-        // --- JSON Functions ---
-
         async function loadJson(jsonText) {
             try {
                 const loadedRisks = JSON.parse(jsonText);
@@ -901,32 +1057,68 @@
                     throw new Error("JSON file does not contain a risk array.");
                 }
                 
-                // Ensure risk numbers are unique against the *current* DB state (risks array)
                 let processedRisks = await ensureUniqueRiskNumbers(loadedRisks); 
 
                 const validRisks = processedRisks.filter(risk =>
                     risk.riskNumber || risk.dateRaised || risk.riskItem
                 );
-
-                if (loadedRisks.length > validRisks.length) {
-                    console.warn(`[JSON] Skipped ${loadedRisks.length - validRisks.length} invalid rows.`);
-                }
                 
-                // Bulk save to IndexedDB, which handles clearing the store first
+                validRisks.forEach(risk => {
+                    risk.dateRaised = getFormattedDate(risk.dateRaised);
+                    risk.reviewDate = getFormattedDate(risk.reviewDate);
+                    risk.sourceLastReviewDate = getFormattedDate(risk.sourceLastReviewDate);
+                    risk.sourceDueDate = getFormattedDate(risk.sourceDueDate);
+                });
+                
                 await bulkPutRisksDB(validRisks);
-                
-                // Reload data from DB and re-render the view
                 await loadRisks(); 
 
                 alert(`Data loaded successfully from JSON! Total risks: ${risks.length}`);
-                console.log(`[JSON] Data loaded successfully from JSON. Total risks: ${risks.length}`);
             } catch (error) {
                 alert('Error processing JSON file. Please ensure it is correctly formatted. Details: ' + error.message);
                 console.error('[JSON] Processing Error:', error);
             }
         }
+        
+        // NEW FUNCTION: Load default JSON file from a hardcoded location
+        async function loadDefaultFile() {
+            loadDefaultFileButton.classList.add('loading');
+            
+            try {
+                const currentRiskCount = (await getAllRisksDB()).length;
+                
+                const confirmationMessage = currentRiskCount > 0 
+                    ? 'Loading the default file will REPLACE all current data in the register. Are you sure?'
+                    : 'Load the default risk register data?';
 
-        // --- CSV Functions ---
+                if (!confirm(confirmationMessage)) {
+                    loadDefaultFileButton.classList.remove('loading');
+                    return;
+                }
+
+                console.log(`[DEFAULT LOAD] Fetching file from: ${DEFAULT_RISK_FILE_PATH}`);
+                const response = await fetch(DEFAULT_RISK_FILE_PATH);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}. Make sure the file exists at the path: ${DEFAULT_RISK_FILE_PATH}`);
+                }
+                
+                const jsonText = await response.text();
+                
+                // Set the persistent filename indicator to "Default System Data"
+                localStorage.setItem('lastImportedFile', 'Default System Data');
+                
+                // Use existing JSON load function
+                await loadJson(jsonText); 
+                
+            } catch (error) {
+                alert(`Error loading default file: ${error.message}`);
+                console.error('[DEFAULT LOAD CRITICAL] Fetch/Processing Error:', error);
+            } finally {
+                loadDefaultFileButton.classList.remove('loading');
+            }
+        }
+
 
         function convertToCsv(dataArray) {
             const headerRow = csvHeaders.map(h => `"${h.replace(/"/g, '""')}"`).join(',');
@@ -948,6 +1140,10 @@
             });
             return [headerRow, ...rows].join('\n');
         }
+
+        // ==================================================
+        // === MODULE 7: CSV Parsing and Load (Fix included) ===
+        // ==================================================
 
         function parseLine(line) {
             const results = [];
@@ -974,22 +1170,30 @@
         }
 
         function parseCsv(csvText) {
+            console.log('[CSV] Starting CSV parsing...');
             const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-            if (lines.length < 1) return [];
+            if (lines.length < 1) {
+                console.warn('[CSV] No data lines found in CSV.');
+                return [];
+            }
 
-            const headers = parseLine(lines[0]);
-            const parsedRisks = [];
-            console.log(`[CSV] Parsing CSV with ${lines.length - 1} data rows.`);
+            const rawHeaders = parseLine(lines[0]);
+            const headers = rawHeaders.map(h => h.trim()); 
             
-            // ... (rest of parseCsv function remains the same, calculating scores and ratings)
+            console.log(`[CSV] Parsed Headers: ${headers.join(' | ')}`);
+            
+            const parsedRisks = [];
             
             for (let i = 1; i < lines.length; i++) {
                 const values = parseLine(lines[i]);
-                if (values.length !== headers.length) continue;
+                if (values.length !== headers.length) {
+                    console.warn(`[CSV] Skipping line ${i + 1}: Expected ${headers.length} columns, got ${values.length}. Line: ${lines[i].substring(0, 50)}...`);
+                    continue;
+                }
 
                 const sourceData = {};
                 for (let j = 0; j < headers.length; j++) {
-                    sourceData[headers[j].trim()] = values[j];
+                    sourceData[headers[j]] = values[j]; 
                 }
 
                 const isClosed = sourceData['Closed Date'] && sourceData['Closed Date'].trim() !== '';
@@ -1006,13 +1210,16 @@
 
                 const risk = {
                     riskNumber: sourceData['Risk Ref.'] || sourceData['Risk Number'] || '',
-                    dateRaised: sourceData['Date Raised'] || '',
+                    dateRaised: getFormattedDate(sourceData['Date Raised'] || ''),
                     raisedBy: sourceData['Assigned To'] || sourceData['Raised By'] || '',
                     riskItem: sourceData['Risk'] || sourceData['Risk Item'] || '',
                     impactStatement: sourceData['Description of Impact'] || sourceData['Impact Statement'] || '',
                     riskOwner: sourceData['Reviewed By'] || sourceData['Risk Owner'] || '',
-                    reviewDate: sourceData['Next Review Date'] || sourceData['Review Date'] || '',
-                    actions: sourceData['Notes & Comments'] || sourceData['Actions'] || '',
+                    reviewDate: getFormattedDate(sourceData['Next Review Date'] || sourceData['Review Date'] || ''),
+                    
+                    actionsText: sourceData['Actions Text (Current)'] || sourceData['Actions'] || sourceData['Notes & Comments'] || '',
+                    notesHistory: sourceData['Notes / History'] || '',
+                    
                     riskStatus: sourceData['Risk Status'] || (isClosed ? 'Closed' : 'Open'),
                     
                     // Initial Ratings
@@ -1033,10 +1240,9 @@
                     ].filter(c => c).join('; '),
 
                     sourceDepartment: sourceData['Source Department'] || '',
-                    sourceLastReviewDate: sourceData['Source Last Review Date'] || '',
-                    sourceDueDate: sourceData['Source Due Date'] || '',
+                    sourceLastReviewDate: getFormattedDate(sourceData['Source Last Review Date'] || ''),
+                    sourceDueDate: getFormattedDate(sourceData['Source Due Date'] || ''),
                     
-                    // Placeholders for fields often missing in simple CSVs
                     riskIssue: sourceData['Risk Issue'] || '', impactedArea: sourceData['Impacted Area'] || '', 
                     riskCategory: sourceData['Risk Category'] || '', relatedLaws: sourceData['Related Laws/Regulations'] || '',
                     nonComplianceImpact: sourceData['Non-Compliance Impact'] || '', outcomeDefinition: sourceData['Outcome Definition'] || '',
@@ -1044,14 +1250,13 @@
 
                 parsedRisks.push(risk);
             }
+            console.log(`[CSV] Finished parsing. Total risks parsed: ${parsedRisks.length}`);
             return parsedRisks;
         }
 
         async function handleCsvLoad(csvText) {
             try {
                 let loadedRisks = parseCsv(csvText);
-
-                // Ensure risk numbers are unique against the *current* DB state (risks array)
                 loadedRisks = await ensureUniqueRiskNumbers(loadedRisks);
 
                 const validRisks = loadedRisks.filter(risk =>
@@ -1062,65 +1267,95 @@
                     alert(`Warning: ${loadedRisks.length - validRisks.length} rows were skipped due to lack of identifying data (Risk #, Date, or Item).`);
                 }
 
-                // Bulk save to IndexedDB, which handles clearing the store first
                 await bulkPutRisksDB(validRisks);
-                
-                // Reload data from DB and re-render the view
                 await loadRisks(); 
 
                 alert('Data loaded successfully from CSV!');
-                console.log(`[CSV] Data loaded successfully. Total risks: ${risks.length}`);
             } catch (error) {
                 alert('Error processing CSV file. Please ensure it is correctly formatted. Details: ' + error.message);
                 console.error('[CSV] Processing Error:', error);
             }
         }
 
-        // --- Event Listeners (Updated to be async where needed) ---
+        // ================================
+        // === MODULE 8: Event Listeners ===
+        // ================================
 
-        loadDataButton.addEventListener('click', async () => {
+        loadDataButton.addEventListener('click', () => {
             if (!fileInput.files.length) {
                 alert('Please select a JSON or CSV file first!');
                 return;
             }
 
-            // Check risks from the DB, not the local array
-            const currentRiskCount = (await getAllRisksDB()).length;
+            const file = fileInput.files[0];
+            const fileName = file.name.toLowerCase();
 
-            if (currentRiskCount > 0 && !confirm('Loading a file will REPLACE all current data in the register. Are you sure?')) {
+            if (!fileName.endsWith('.json') && !fileName.endsWith('.csv')) {
+                alert('Unsupported file type. Please select a JSON (.json) or CSV (.csv) file.');
                 return;
             }
 
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            const fileName = file.name.toLowerCase();
+            // Save filename immediately for UI update upon successful load
+            const originalFileName = file.name; 
 
-            reader.onload = async (e) => {
-                const fileContent = e.target.result;
-                if (fileName.endsWith('.json')) {
-                    await loadJson(fileContent);
-                } else if (fileName.endsWith('.csv')) {
-                    await handleCsvLoad(fileContent);
-                } else {
-                    alert('Unsupported file type. Please select a JSON (.json) or CSV (.csv) file.');
-                    console.error('[LOAD] Unsupported file type:', fileName);
+            (async () => {
+                loadDataButton.classList.add('loading');
+                
+                try {
+                    const currentRiskCount = (await getAllRisksDB()).length;
+
+                    if (currentRiskCount > 0 && !confirm('Loading a file will REPLACE all current data in the register. Are you sure?')) {
+                        loadDataButton.classList.remove('loading'); 
+                        return;
+                    }
+
+                    const reader = new FileReader();
+
+                    reader.onload = async (e) => {
+                        const fileContent = e.target.result;
+                        
+                        try {
+                            if (fileName.endsWith('.json')) {
+                                console.log(`[IMPORT] Starting JSON load for file: ${fileName}`);
+                                await loadJson(fileContent);
+                            } else if (fileName.endsWith('.csv')) {
+                                console.log(`[IMPORT] Starting CSV load for file: ${fileName}`);
+                                await handleCsvLoad(fileContent);
+                            }
+                            // Only update the persistent filename on success
+                            localStorage.setItem('lastImportedFile', originalFileName);
+                            updateLastFileDisplay();
+                        } catch (error) {
+                            alert('A critical error occurred during file processing. Check the console for details.');
+                            console.error('[IMPORT CRITICAL] Processing Error:', error);
+                        } finally {
+                            loadDataButton.classList.remove('loading');
+                        }
+                    };
+
+                    reader.onerror = () => {
+                        alert('Error reading file. The file may be corrupt or too large.');
+                        console.error('[LOAD] File Read Error.');
+                        loadDataButton.classList.remove('loading'); 
+                    };
+
+                    reader.readAsText(file);
+                } catch (error) {
+                    console.error('[LOAD BUTTON] Error during initial database check:', error);
+                    loadDataButton.classList.remove('loading'); 
                 }
-            };
-
-            reader.onerror = () => {
-                alert('Error reading file.');
-                console.error('[LOAD] File Read Error.');
-            };
-
-            reader.readAsText(file);
+            })(); 
         });
+        
+        // NEW EVENT LISTENER: Default Load Button
+        loadDefaultFileButton.addEventListener('click', loadDefaultFile);
+
 
         saveJsonButton.addEventListener('click', () => {
             if (risks.length === 0) {
                 alert('No data to save! (Array is empty)');
                 return;
             }
-            // Use the globally loaded 'risks' array for export, as it reflects the current DB state
             const jsonContent = JSON.stringify(risks, null, 2); 
             const filename = `risk_register_${getFormattedDate(new Date())}.json`;
             downloadFile(jsonContent, filename, 'application/json');
@@ -1139,19 +1374,40 @@
         });
 
         addNewRiskButton.addEventListener('click', () => {
-            console.log('[NAV] Navigating to Add/Edit Risk form.');
             window.location.href = 'risk_form.html';
         });
 
         manageDataButton.addEventListener('click', () => {
-            console.log('[NAV] Navigating to Data Management page.');
             window.location.href = 'data_management.html';
         });
 
-        // --- Initial Load ---
-        document.addEventListener('DOMContentLoaded', () => {
+        // ===================================
+        // === MODULE 9: Initial Load/Setup ===
+        // ===================================
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('[INIT] Document loaded. Starting application using IndexedDB.');
-            loadRisks();
+            
+            // Check if default filter preference is set
+            if (!localStorage.getItem('reviewDateFilter')) {
+                localStorage.setItem('reviewDateFilter', 'Overdue');
+            }
+            
+            // Update the file display based on stored value
+            updateLastFileDisplay();
+            
+            await initDB(); 
+            const currentRiskCount = (await getAllRisksDB()).length;
+
+            if (currentRiskCount === 0) {
+                console.log("[INIT] Database is empty. Prompting user to load default file.");
+                if (confirm("The risk register is currently empty. Would you like to load the default dataset?")) {
+                    await loadDefaultFile(loadDefaultFileButton);
+                } else {
+                    await loadRisks(); 
+                }
+            } else {
+                await loadRisks();
+            }
         });
     </script>
 </body>
