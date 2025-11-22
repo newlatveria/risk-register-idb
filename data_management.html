@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Management Controls</title>
+    <title>Manage Risk Register Data</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,12 +12,12 @@
             color: #333;
         }
         .container {
-            max-width: 900px;
+            max-width: 700px;
             margin: 0 auto;
             background-color: #fff;
-            padding: 25px;
+            padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
         }
         h1 {
             color: #d9534f;
@@ -26,132 +26,135 @@
             margin-bottom: 20px;
         }
         h2 {
-            color: #5bc0de;
+            color: #333;
             margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px dashed #ccc;
         }
-        .control-section {
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f9f9f9;
+        p {
+            line-height: 1.6;
         }
-        button {
-            padding: 10px 15px;
-            color: white;
+        .action-buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        .action-buttons button {
+            padding: 12px 25px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s ease;
-            margin-right: 10px;
+            font-weight: bold;
         }
-        #clearDataButton {
-            background-color: #d9534f;
+        #deleteDataButton {
+            background-color: #d9534f; /* Red for destructive action */
+            color: white;
         }
-        #clearDataButton:hover {
+        #deleteDataButton:hover {
             background-color: #c9302c;
         }
-        #clearOwnersButton {
-            background-color: #f0ad4e;
-        }
-        #clearOwnersButton:hover {
-            background-color: #ec971f;
-        }
         #backButton {
-            background-color: #5cb85c;
-            margin-top: 20px;
+            background-color: #6c757d;
+            color: white;
         }
         #backButton:hover {
-            background-color: #4cae4c;
+            background-color: #5a6268;
         }
-        #rawData {
-            width: 100%;
-            height: 300px;
-            padding: 10px;
-            border: 1px solid #ccc;
+        .warning-box {
+            border: 2px solid #d9534f;
+            background-color: #fcf8f8;
+            padding: 15px;
             border-radius: 4px;
-            overflow: auto;
-            white-space: pre-wrap;
-            font-family: monospace;
-            background-color: #e9ecef;
-        }
-        .warning-text {
-            color: #c9302c;
+            margin-bottom: 20px;
             font-weight: bold;
-            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Tool Data Management</h1>
-        <p>This page provides administrative controls for managing the data stored in your browser's local storage for the Risk Register tool.</p>
+        <h1>⚠️ Advanced Data Management</h1>
 
-        <div class="control-section">
-            <h2>🚨 Clear All Risk Data</h2>
-            <p class="warning-text">WARNING: This will permanently delete ALL risk entries from your browser's local storage. This action cannot be undone unless you have saved a CSV file.</p>
-            <button id="clearDataButton">Clear ALL Risks (LocalStorage: 'risks')</button>
-        </div>
-        
-        <div class="control-section">
-            <h2>⚠️ Clear Risk Owners List</h2>
-            <p>Clears the list of unique Risk Owners used to populate the dropdown filters. This will be automatically rebuilt the next time you load a CSV or add new risks.</p>
-            <button id="clearOwnersButton">Rebuild Owners List (LocalStorage: 'risks')</button>
-            <p style="font-size: 0.9em; margin-top: 10px;">Note: Since the owners are stored *inside* the 'risks' array, this button simply forces the application to reload the 'risks' array, which rebuilds the dropdowns.</p>
+        <div class="warning-box">
+            <p><strong>DANGER ZONE:</strong> The actions on this page are irreversible. Ensure you have exported a JSON or CSV backup before proceeding with any data deletion.</p>
         </div>
 
-        <h2>Raw Data View</h2>
-        <p>Current content of your primary data storage key ('risks'):</p>
-        <pre id="rawData"></pre>
+        <h2>Risk Register Data Deletion (IndexedDB)</h2>
+        <p>This action will delete **all risk records** permanently from your browser's IndexedDB. This is your core risk data, including all risk details, scores, and review dates.</p>
         
-        <button id="backButton">← Back to Risk Register</button>
+        <h2>Full System Reset (IndexedDB & Local Storage)</h2>
+        <p>This will perform a complete cleanup, deleting:</p>
+        <ul>
+            <li>**All Risk Records** (from IndexedDB).</li>
+            <li>**All Local Storage items** (including filter preferences and settings).</li>
+        </ul>
+        <p>Use this option to fully reset the application to its initial state.</p>
+
+        <div class="action-buttons">
+            <button id="deleteDataButton">
+                ⚡ DELETE ALL DATA & RESET SYSTEM
+            </button>
+            <button id="backButton">
+                ← Back to Register
+            </button>
+        </div>
     </div>
 
     <script>
-        const LOCAL_STORAGE_KEY = 'risks';
+        const DB_NAME = 'RiskRegisterDB';
+        const STORE_NAME = 'risks';
 
-        const rawDataPre = document.getElementById('rawData');
-        const clearDataButton = document.getElementById('clearDataButton');
-        const clearOwnersButton = document.getElementById('clearOwnersButton');
+        const deleteDataButton = document.getElementById('deleteDataButton');
         const backButton = document.getElementById('backButton');
+        
+        /**
+         * Clears all risk data from IndexedDB and all settings from Local Storage.
+         */
+        function deleteAllDataAndReset() {
+            return new Promise((resolve, reject) => {
+                // 1. Delete IndexedDB Database
+                const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
 
-        function updateRawDataView() {
-            const data = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (data) {
-                try {
-                    // Display pretty-printed JSON
-                    rawDataPre.textContent = JSON.stringify(JSON.parse(data), null, 2);
-                } catch (e) {
-                    rawDataPre.textContent = `Error parsing data: ${data}`;
-                }
-            } else {
-                rawDataPre.textContent = "Local Storage key 'risks' is empty.";
-            }
+                deleteRequest.onerror = (event) => {
+                    console.error("[IDB DELETE] Error deleting database:", event.target.error);
+                    reject(new Error("Failed to delete IndexedDB."));
+                };
+
+                deleteRequest.onsuccess = () => {
+                    console.log("[IDB DELETE] Database successfully deleted.");
+
+                    // 2. Clear Local Storage
+                    try {
+                        localStorage.clear();
+                        console.log("[LOCAL STORAGE] Local Storage successfully cleared.");
+                        resolve("Full system reset complete.");
+                    } catch (e) {
+                        console.error("[LOCAL STORAGE] Error clearing local storage:", e);
+                        // Continue resolving even if local storage fails, as IDB is the main priority
+                        resolve("IndexedDB deleted, but Local Storage may not have been fully cleared.");
+                    }
+                };
+            });
         }
 
-        clearDataButton.addEventListener('click', () => {
-            if (confirm("ARE YOU SURE? This will permanently delete ALL Risk Register data from this browser.")) {
-                localStorage.removeItem(LOCAL_STORAGE_KEY);
-                alert("All risk data has been cleared!");
-                updateRawDataView();
+        deleteDataButton.addEventListener('click', async () => {
+            if (confirm("Are you ABSOLUTELY SURE you want to DELETE ALL RISK DATA and reset all settings? This cannot be undone.")) {
+                try {
+                    await deleteAllDataAndReset();
+                    alert("✅ Full System Reset Complete. All risk data and settings have been cleared.");
+                    window.location.href = 'index.html'; // Redirect to a fresh start
+                } catch (error) {
+                    alert("An error occurred during data deletion. Check the console for details.");
+                }
             }
-        });
-        
-        clearOwnersButton.addEventListener('click', () => {
-            // Since the owners list is built dynamically from the 'risks' data 
-            // every time the main page loads, reloading the main page is sufficient 
-            // to "rebuild" the dropdown based on the current data.
-            alert("Risk Owners list will be rebuilt automatically on the next page load from the 'risks' data.");
-            window.location.href = 'index.html';
         });
 
         backButton.addEventListener('click', () => {
             window.location.href = 'index.html';
         });
-
-        // Initial data load
-        document.addEventListener('DOMContentLoaded', updateRawDataView);
     </script>
 </body>
 </html>

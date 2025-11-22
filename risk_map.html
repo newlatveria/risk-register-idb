@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Register - Network Map</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f4; }
+        /* 2. CHECK THIS STYLE: MUST HAVE HEIGHT/WIDTH */
+        #network {
+            width: 100%;
+            height: 90vh; 
+            border: 1px solid lightgray;
+            background-color: white;
+        }
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header button {
+            background-color: #ffc107;
+            color: #333;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Risk Dependency Map</h1>
+        <button onclick="window.location.href='index.html'">⬅️ Back to Register</button>
+    </div>
+    <div id="network"></div>
+
+    <script>
+        // === MODULE 1: IndexedDB Configuration (Reused from index.html) ===
+        const DB_NAME = 'RiskRegisterDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'risks';
+        let db;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                if (db) { resolve(db); return; }
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = (e) => reject(e.target.error);
+                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'riskNumber' });
+                    }
+                };
+            });
+        }
+
+        async function getAllRisksDB() {
+            const db = await initDB();
+            return new Promise((res, rej) => {
+                const tx = db.transaction([STORE_NAME], 'readonly');
+                const req = tx.objectStore(STORE_NAME).getAll();
+                req.onsuccess = (e) => res(e.target.result);
+                req.onerror = (e) => rej(e.target.error);
+            });
+        }
+
+        // === MODULE 2: vis.js Network Generation ===
+        
+        const COLORS = {
+            Critical: '#d9534f', // Red
+            High: '#f0ad4e',     // Orange
+            Medium: '#5cb85c',   // Green
+            Low: '#5bc0de',      // Blue
+            Open: '#dc3545',
+            Closed: '#343a40'
+        };
+
+        // --- Replace this entire function in risk_map.html ---
+        function getRiskNode(risk) {
+            const score = risk.riskScoreResidual || 0;
+            const rating = risk.riskRatingResidual || 'Low';
+            const status = risk.riskStatus || 'Open';
+    
+        // Nodes represent the risks
+            return {
+            id: risk.riskNumber,
+            label: `Risk ${risk.riskNumber}: ${risk.riskItem}`,
+            title: `Owner: ${risk.riskOwner}\nStatus: ${status}\nResidual Score: ${score}`,
+            group: rating, // Group by residual rating
+            color: {
+            background: COLORS[rating],
+            border: COLORS[rating],
+            highlight: { background: '#fff', border: COLORS[rating] }
+        },
+        font: { color: (rating === 'Critical' || rating === 'High') ? 'white' : 'black' },
+        // Use size based on Residual Score (e.g., score * 1.5)
+        value: score * 1.5 + 5, // Minimum size of 5 + score factor
+    };
+}
+// --- End of replacement ---
+
+        function drawNetwork(risks) {
+            const nodes = [];
+            const edges = [];
+            
+            const existingRiskNumbers = new Set(risks.map(r => r.riskNumber));
+
+            risks.forEach(risk => {
+                nodes.push(getRiskNode(risk));
+
+                // --- EDGE CREATION LOGIC ---
+                if (risk.relatedRisks) {
+                    // Normalize the input string: split by comma, trim whitespace, and filter empty strings
+                    const relatedIds = risk.relatedRisks.split(',').map(id => String(id).trim()).filter(id => id.length > 0);
+
+                    relatedIds.forEach(targetId => {
+                        // Only create an edge if the target risk actually exists in the dataset
+                        if (existingRiskNumbers.has(targetId)) {
+                            edges.push({
+                                from: risk.riskNumber, // Source/Cause
+                                to: targetId,          // Target/Effect
+                                arrows: 'to',          
+                                color: { color: '#888', highlight: COLORS[risk.riskRatingResidual] || '#888' },
+                                title: `Risk ${risk.riskNumber} is linked to Risk ${targetId}`,
+                                value: risk.riskScoreResidual 
+                            });
+                        }
+                    });
+                }
+            });
+
+            const data = {
+                nodes: new vis.DataSet(nodes),
+                edges: new vis.DataSet(edges)
+            };
+
+            const options = {
+                nodes: {
+                    shape: 'dot',
+                    scaling: {
+                        min: 10,
+                        max: 30,
+                        label: { min: 8, max: 20 },
+                    },
+                    shadow: true
+                },
+                edges: {
+                    width: 2,
+                    shadow: true,
+                    smooth: { type: 'dynamic' }
+                },
+                groups: {
+                    Critical: { color: { background: COLORS.Critical, border: 'black' } },
+                    High: { color: { background: COLORS.High, border: 'black' } },
+                    Medium: { color: { background: COLORS.Medium, border: 'black' } },
+                    Low: { color: { background: COLORS.Low, border: 'black' } },
+                },
+                physics: {
+                    forceAtlas2Based: {
+                        gravitationalConstant: -100,
+                        centralGravity: 0.005,
+                        springLength: 100,
+                        springConstant: 0.18
+                    },
+                    maxVelocity: 146,
+                    solver: 'forceAtlas2Based',
+                    timestep: 0.35,
+                    stabilization: { iterations: 150 }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 200,
+                    hideEdgesOnDrag: true
+                }
+            };
+
+            const container = document.getElementById('network');
+            new vis.Network(container, data, options);
+            
+            // Show the image of what they should see (Trigger diagram)
+            
+
+ 
+        }
+
+        // === MODULE 3: Initialization ===
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const risks = await getAllRisksDB();
+                if (risks.length === 0) {
+                    document.getElementById('network').innerHTML = '<div style="padding: 50px; text-align: center;">No risks found in the database. Please load data via the main register view.</div>';
+                    return;
+                }
+                drawNetwork(risks);
+            } catch (e) {
+                console.error("Error drawing network:", e);
+                document.getElementById('network').innerHTML = '<div style="padding: 50px; text-align: center; color: red;">Error loading the risk data or drawing the network. Check the console for details.</div>';
+            }
+        });
+
+    </script>
+</body>
+</html>

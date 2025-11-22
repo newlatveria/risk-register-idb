@@ -4,149 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add/Edit Risk</title>
+    
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
     <style>
-        /* ... (CSS from previous response - unchanged) ... */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #0056b3;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #555;
-        }
-        .form-group input:not([type="number"]), 
-        .form-group textarea, 
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 16px;
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        h1 { color: #0056b3; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; } /* Increased margin for editors */
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        
+        /* Input styling */
+        .form-group input:not([type="number"]), .form-group select {
+            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px;
         }
         .form-group input[type="number"] {
-            width: 80px;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 16px;
-            text-align: center;
+            width: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 16px; text-align: center;
         }
-        
+        input[readonly] { background-color: #e9ecef; cursor: not-allowed; font-weight: bold; }
+
+        /* QUILL EDITOR STYLING */
+        .editor-container { height: 150px; background-color: white; }
+        .ql-toolbar { background-color: #f8f9fa; border-radius: 4px 4px 0 0; }
+        .ql-container { border-radius: 0 0 4px 4px; font-size: 16px; }
+
         /* Layout for rating sections */
-        .rating-section {
-            display: flex;
-            gap: 20px;
-            margin-top: 15px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-        }
-        .rating-group {
-            flex: 1;
-            min-width: 0;
-        }
-        .rating-group h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #007bff;
-            font-size: 1.1em;
-        }
-        .rating-fields {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 10px;
-        }
-        .rating-fields > div {
-            flex: 1;
-        }
+        .rating-section { display: flex; gap: 20px; margin-top: 15px; padding: 15px; border: 1px solid #ddd; border-radius: 4px; background-color: #f9f9f9; }
+        .rating-group { flex: 1; min-width: 0; }
+        .rating-group h3 { margin-top: 0; margin-bottom: 10px; color: #007bff; font-size: 1.1em; }
+        .rating-fields { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+        .rating-fields > div { flex: 1; }
 
-        /* Calculated/Readonly fields styling */
-        input[readonly], select[readonly] {
-            background-color: #e9ecef; /* Greyed out background */
-            cursor: not-allowed;
-            color: #495057;
-            font-weight: bold;
-        }
+        .action-buttons { margin-top: 30px; display: flex; justify-content: space-between; }
+        .action-buttons button { padding: 12px 25px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background-color 0.3s ease; }
+        #saveButton { background-color: #28a745; color: white; }
+        #saveButton:hover { background-color: #1e7e34; }
+        #cancelButton { background-color: #6c757d; color: white; }
+        #cancelButton:hover { background-color: #5a6268; }
 
-        /* Action Buttons */
-        .action-buttons {
-            margin-top: 30px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .action-buttons button {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-        }
-        #saveButton {
-            background-color: #28a745;
-            color: white;
-        }
-        #saveButton:hover {
-            background-color: #1e7e34;
-        }
-        #cancelButton {
-            background-color: #6c757d;
-            color: white;
-        }
-        #cancelButton:hover {
-            background-color: #5a6268;
-        }
-
-        /* Additional Section Styling */
-        .additional-details {
-            margin-top: 30px;
-            padding: 20px;
-            border: 1px dashed #007bff;
-            border-radius: 4px;
-            background-color: #f0f8ff;
-        }
-        .additional-details h2 {
-            color: #007bff;
-            margin-top: 0;
-            border-bottom: 1px solid #007bff;
-            padding-bottom: 5px;
-        }
-        .additional-fields-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        .source-details {
-            border-left: 5px solid #8c72a8; 
-            padding-left: 15px;
-            background-color: #f3f0f7;
-        }
+        .additional-details { margin-top: 30px; padding: 20px; border: 1px dashed #007bff; border-radius: 4px; background-color: #f0f8ff; }
+        .additional-details h2 { color: #007bff; margin-top: 0; border-bottom: 1px solid #007bff; padding-bottom: 5px; }
+        .additional-fields-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px; }
+        .source-details { border-left: 5px solid #8c72a8; padding-left: 15px; background-color: #f3f0f7; }
     </style>
 </head>
 <body>
@@ -156,146 +56,105 @@
             
             <div class="form-group">
                 <label for="riskNumber">Risk Number</label>
-                <input type="text" id="riskNumber" name="riskNumber" readonly title="Automatically assigned.">
+                <input type="text" id="riskNumber" readonly>
             </div>
-
             <div class="form-group">
                 <label for="dateRaised">Date Raised <span style="color:red;">*</span></label>
-                <input type="date" id="dateRaised" name="dateRaised" required>
+                <input type="date" id="dateRaised" required>
             </div>
-            
             <div class="form-group">
                 <label for="riskItem">Risk Item (Concise Summary) <span style="color:red;">*</span></label>
-                <input type="text" id="riskItem" name="riskItem" required>
+                <input type="text" id="riskItem" required>
             </div>
 
             <div class="form-group">
-                <label for="impactStatement">Impact Statement (Detailed Description of the Risk)</label>
-                <textarea id="impactStatement" name="impactStatement" rows="4"></textarea>
+                <label>Risk Issue (Detailed Description) <span style="color:red;">*</span></label>
+                <div id="editor-riskIssue" class="editor-container"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Impact Statement</label>
+                <div id="editor-impactStatement" class="editor-container"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="relatedRisks">Linked Risks (Dependencies)</label>
+                <input type="text" id="relatedRisks" name="relatedRisks" placeholder="e.g., 1002, 1005 (Comma separated Risk Numbers)">
+                <small style="color:#666;">Enter the Risk Numbers of any risks that are caused by or related to this one.</small>
             </div>
             
             <div class="form-group">
-                <label for="riskOwner">Risk Owner</label>
-                <input type="text" id="riskOwner" name="riskOwner" list="ownerList">
-                <datalist id="ownerList">
-                    </datalist>
+                <label for="riskOwner">Risk Owner <span style="color:red;">*</span></label>
+                <input type="text" id="riskOwner" list="ownerList" required>
+                <datalist id="ownerList"></datalist>
             </div>
             
             <div class="form-group">
                 <label for="riskStatus">Risk Status <span style="color:red;">*</span></label>
-                <select id="riskStatus" name="riskStatus" required>
+                <select id="riskStatus" required>
                     <option value="Open">Open</option>
                     <option value="In Progress">In Progress</option>
                     <option value="On Hold">On Hold</option>
                     <option value="Closed">Closed</option>
                 </select>
             </div>
-
             <div class="form-group">
                 <label for="reviewDate">Next Review Date</label>
-                <input type="date" id="reviewDate" name="reviewDate">
+                <input type="date" id="reviewDate">
             </div>
 
             <div class="rating-section">
                 <div class="rating-group">
-                    <h3>Initial Risk (Inherent)</h3>
+                    <h3>Initial Risk</h3>
                     <div class="rating-fields">
-                        <div class="form-group">
-                            <label for="probabilityInitial">Prob. (1-5)</label>
-                            <input type="number" id="probabilityInitial" name="probabilityInitial" min="1" max="5" oninput="calculateAndSetRiskMetrics()" value="1">
-                        </div>
-                        <div class="form-group">
-                            <label for="impactInitial">Impact (1-5)</label>
-                            <input type="number" id="impactInitial" name="impactInitial" min="1" max="5" oninput="calculateAndSetRiskMetrics()" value="1">
-                        </div>
-                        <div class="form-group">
-                            <label for="riskScoreInitial">Score</label>
-                            <input type="text" id="riskScoreInitial" name="riskScoreInitial" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="riskRatingInitial">Rating</label>
-                            <input type="text" id="riskRatingInitial" name="riskRatingInitial" readonly>
-                        </div>
+                        <div class="form-group"><label>Prob.</label><input type="number" id="probabilityInitial" min="1" max="5" oninput="calcMetrics()"></div>
+                        <div class="form-group"><label>Impact</label><input type="number" id="impactInitial" min="1" max="5" oninput="calcMetrics()"></div>
+                        <div class="form-group"><label>Score</label><input type="text" id="riskScoreInitial" readonly></div>
+                        <div class="form-group"><label>Rating</label><input type="text" id="riskRatingInitial" readonly></div>
                     </div>
                 </div>
-
                 <div class="rating-group">
-                    <h3>Residual Risk (Current)</h3>
+                    <h3>Residual Risk</h3>
                     <div class="rating-fields">
-                        <div class="form-group">
-                            <label for="probabilityResidual">Prob. (1-5)</label>
-                            <input type="number" id="probabilityResidual" name="probabilityResidual" min="1" max="5" oninput="calculateAndSetRiskMetrics()" value="1">
-                        </div>
-                        <div class="form-group">
-                            <label for="impactResidual">Impact (1-5)</label>
-                            <input type="number" id="impactResidual" name="impactResidual" min="1" max="5" oninput="calculateAndSetRiskMetrics()" value="1">
-                        </div>
-                        <div class="form-group">
-                            <label for="riskScoreResidual">Score</label>
-                            <input type="text" id="riskScoreResidual" name="riskScoreResidual" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="riskRatingResidual">Rating</label>
-                            <input type="text" id="riskRatingResidual" name="riskRatingResidual" readonly>
-                        </div>
+                        <div class="form-group"><label>Prob.</label><input type="number" id="probabilityResidual" min="1" max="5" oninput="calcMetrics()"></div>
+                        <div class="form-group"><label>Impact</label><input type="number" id="impactResidual" min="1" max="5" oninput="calcMetrics()"></div>
+                        <div class="form-group"><label>Score</label><input type="text" id="riskScoreResidual" readonly></div>
+                        <div class="form-group"><label>Rating</label><input type="text" id="riskRatingResidual" readonly></div>
                     </div>
                 </div>
             </div>
             
             <div class="form-group">
-                <label for="controlsMitigations">Controls / Mitigations</label>
-                <textarea id="controlsMitigations" name="controlsMitigations" rows="4" placeholder="Existing controls and planned actions to reduce risk..."></textarea>
+                <label>Controls / Mitigations</label>
+                <div id="editor-controlsMitigations" class="editor-container"></div>
             </div>
             
             <div class="form-group">
-                <label for="actions">Actions Text / Notes</label>
-                <textarea id="actions" name="actions" rows="3" placeholder="Latest actions, updates, or comments..."></textarea>
+                <label>Actions Text / Notes</label>
+                <div id="editor-actionsText" class="editor-container"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Notes / History</label>
+                <div id="editor-notesHistory" class="editor-container"></div>
             </div>
 
             <div class="additional-details">
                 <h2>Additional Details</h2>
                 <div class="additional-fields-grid">
-                    <div class="form-group">
-                        <label for="raisedBy">Raised By</label>
-                        <input type="text" id="raisedBy" name="raisedBy">
-                    </div>
-                    <div class="form-group">
-                        <label for="impactedArea">Impacted Area</label>
-                        <input type="text" id="impactedArea" name="impactedArea">
-                    </div>
-                    <div class="form-group">
-                        <label for="riskCategory">Risk Category</label>
-                        <input type="text" id="riskCategory" name="riskCategory" placeholder="e.g., Financial, Operational, Compliance">
-                    </div>
-                    <div class="form-group">
-                        <label for="relatedLaws">Related Laws/Regs</label>
-                        <input type="text" id="relatedLaws" name="relatedLaws">
-                    </div>
-                    <div class="form-group">
-                        <label for="nonComplianceImpact">Non-Compliance Impact</label>
-                        <input type="text" id="nonComplianceImpact" name="nonComplianceImpact">
-                    </div>
-                    <div class="form-group">
-                        <label for="outcomeDefinition">Desired Outcome Definition</label>
-                        <input type="text" id="outcomeDefinition" name="outcomeDefinition">
-                    </div>
+                    <div class="form-group"><label>Raised By</label><input type="text" id="raisedBy"></div>
+                    <div class="form-group"><label>Impacted Area</label><input type="text" id="impactedArea"></div>
+                    <div class="form-group"><label>Risk Category</label><input type="text" id="riskCategory"></div>
+                    <div class="form-group"><label>Related Laws/Regs</label><input type="text" id="relatedLaws"></div>
+                    <div class="form-group"><label>Non-Compliance Impact</label><input type="text" id="nonComplianceImpact"></div>
+                    <div class="form-group"><label>Outcome Definition</label><input type="text" id="outcomeDefinition"></div>
                 </div>
-                
                 <div class="source-details" style="margin-top: 20px;">
-                    <h3>Source/GCR Details (Optional)</h3>
+                    <h3>Source Details</h3>
                     <div class="additional-fields-grid">
-                        <div class="form-group">
-                            <label for="sourceDepartment">Source Department</label>
-                            <input type="text" id="sourceDepartment" name="sourceDepartment">
-                        </div>
-                        <div class="form-group">
-                            <label for="sourceLastReviewDate">Source Last Review Date</label>
-                            <input type="date" id="sourceLastReviewDate" name="sourceLastReviewDate">
-                        </div>
-                        <div class="form-group">
-                            <label for="sourceDueDate">Source Due Date</label>
-                            <input type="date" id="sourceDueDate" name="sourceDueDate">
-                        </div>
+                        <div class="form-group"><label>Source Dept</label><input type="text" id="sourceDepartment"></div>
+                        <div class="form-group"><label>Source Last Review</label><input type="date" id="sourceLastReviewDate"></div>
+                        <div class="form-group"><label>Source Due Date</label><input type="date" id="sourceDueDate"></div>
                     </div>
                 </div>
             </div>
@@ -308,279 +167,141 @@
     </div>
 
     <script>
-        // --- IndexedDB Configuration and Wrapper (Unchanged) ---
-        const DB_NAME = 'RiskRegisterDB';
-        const DB_VERSION = 1;
-        const STORE_NAME = 'risks';
-        let db;
-
-        function initDB() {
-            return new Promise((resolve, reject) => {
-                if (db) {
-                    resolve(db);
-                    return;
-                }
-                
-                if (!window.indexedDB) {
-                    reject(new Error("IndexedDB not supported."));
-                    return;
-                }
-
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-                request.onerror = (event) => {
-                    console.error("[IDB] Database error:", event.target.error);
-                    reject(event.target.error);
-                };
-
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    console.log("[IDB] Database opened successfully.");
-                    resolve(db);
-                };
-
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'riskNumber' });
-                        objectStore.createIndex('riskOwner', 'riskOwner', { unique: false });
-                        console.log("[IDB] Object store created/upgraded.");
-                    }
-                };
-            });
-        }
+        // --- QUILL INIT ---
+        // Initialize editors and store references in an object
+        const quillEditors = {};
+        const editorIds = ['riskIssue', 'impactStatement', 'controlsMitigations', 'actionsText', 'notesHistory'];
         
-        async function getAllRisksDB() {
-            const dbInstance = await initDB();
-            return new Promise((resolve, reject) => {
-                const transaction = dbInstance.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.getAll();
-
-                request.onerror = (event) => reject(event.target.error);
-                request.onsuccess = (event) => resolve(event.target.result);
-            });
-        }
-        
-        async function getRiskByNumberDB(riskNumber) {
-            const dbInstance = await initDB();
-            return new Promise((resolve, reject) => {
-                const transaction = dbInstance.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.get(riskNumber);
-
-                request.onerror = (event) => reject(event.target.error);
-                request.onsuccess = (event) => resolve(event.target.result);
-            });
-        }
-
-        async function updateRiskInDB(risk) {
-            const dbInstance = await initDB();
-            return new Promise((resolve, reject) => {
-                const transaction = dbInstance.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.put(risk); 
-
-                request.onerror = (event) => reject(event.target.error);
-                request.onsuccess = () => resolve();
-            });
-        }
-
-
-        // --- Utility Function for Date Formatting (FIXED) ---
-        function getFormattedDate(dateString) {
-            if (!dateString) return '';
-            
-            // Try to parse the date. Assumes dateString is either YYYY-MM-DD or DD/MM/YYYY
-            let date;
-            
-            // 1. Try YYYY-MM-DD (standard) or ISO format (IndexedDB string format)
-            date = new Date(dateString);
-
-            // 2. If the first attempt fails (invalid date or year is too small, likely DD/MM/YYYY)
-            if (isNaN(date.getTime()) || date.getFullYear() < 1900) {
-                // Check for DD/MM/YYYY format explicitly (e.g., "01/05/2025")
-                const parts = dateString.split('/');
-                if (parts.length === 3) {
-                    // Re-assemble as YYYY-MM-DD (Month is 0-indexed in Date constructor)
-                    // new Date(year, monthIndex, day)
-                    date = new Date(parts[2], parts[1] - 1, parts[0]); 
+        editorIds.forEach(id => {
+            quillEditors[id] = new Quill(`#editor-${id}`, {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        ['clean']
+                    ]
                 }
-            }
-
-            if (isNaN(date.getTime())) {
-                console.warn(`Could not parse date: ${dateString}. Leaving empty.`);
-                return '';
-            }
-
-            // Convert to YYYY-MM-DD string format for HTML input type="date"
-            const year = date.getFullYear();
-            // getMonth() returns 0-11, so add 1
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            
-            return `${year}-${month}-${day}`;
-        }
-
-
-        // --- Form Logic ---
-        const form = document.getElementById('riskForm');
-        const formTitle = document.getElementById('formTitle');
-        const urlParams = new URLSearchParams(window.location.search);
-        const editRiskNumber = urlParams.get('id');
-
-        // Risk rating calculation logic (unchanged)
-        function getRiskRating(score) {
-            if (score <= 5) return 'Low';
-            if (score <= 10) return 'Medium';
-            if (score <= 15) return 'High';
-            return 'Critical';
-        }
-
-        function safeParseInt(value) {
-            const num = parseInt(value, 10);
-            return isNaN(num) ? '' : num;
-        }
-
-        function calculateAndSetRiskMetrics() {
-            // ... (Calculation logic - unchanged) ...
-            const probInit = safeParseInt(document.getElementById('probabilityInitial').value);
-            const impInit = safeParseInt(document.getElementById('impactInitial').value);
-            const scoreInit = (probInit && impInit) ? probInit * impInit : '';
-            const ratingInit = scoreInit ? getRiskRating(scoreInit) : '';
-
-            document.getElementById('riskScoreInitial').value = scoreInit;
-            document.getElementById('riskRatingInitial').value = ratingInit;
-
-            const probRes = safeParseInt(document.getElementById('probabilityResidual').value);
-            const impRes = safeParseInt(document.getElementById('impactResidual').value);
-            const scoreRes = (probRes && impRes) ? probRes * impRes : '';
-            const ratingRes = scoreRes ? getRiskRating(scoreRes) : '';
-            
-            document.getElementById('riskScoreResidual').value = scoreRes;
-            document.getElementById('riskRatingResidual').value = ratingRes;
-        }
-
-        // --- Load Form Data (UPDATED to use getFormattedDate) ---
-        function loadFormData(risk) {
-            formTitle.textContent = `Edit Risk #${risk.riskNumber}`;
-            document.getElementById('riskNumber').value = risk.riskNumber || '';
-            
-            // Fix: Apply date formatter to ensure YYYY-MM-DD format
-            document.getElementById('dateRaised').value = getFormattedDate(risk.dateRaised);
-            
-            document.getElementById('raisedBy').value = risk.raisedBy || '';
-            document.getElementById('riskItem').value = risk.riskItem || '';
-            document.getElementById('impactStatement').value = risk.impactStatement || '';
-            document.getElementById('impactedArea').value = risk.impactedArea || '';
-            document.getElementById('riskCategory').value = risk.riskCategory || '';
-            document.getElementById('relatedLaws').value = risk.relatedLaws || '';
-            document.getElementById('nonComplianceImpact').value = risk.nonComplianceImpact || '';
-            document.getElementById('outcomeDefinition').value = risk.outcomeDefinition || '';
-            
-            document.getElementById('riskOwner').value = risk.riskOwner || '';
-            document.getElementById('controlsMitigations').value = risk.controlsMitigations || '';
-            document.getElementById('actions').value = risk.actions || '';
-            
-            document.getElementById('riskStatus').value = risk.riskStatus || 'Open';
-            
-            // Fix: Apply date formatter
-            document.getElementById('reviewDate').value = getFormattedDate(risk.reviewDate);
-            
-            // Initial Ratings (unchanged)
-            document.getElementById('probabilityInitial').value = risk.probabilityInitial || 1;
-            document.getElementById('impactInitial').value = risk.impactInitial || 1;
-            
-            // Residual Ratings (unchanged)
-            document.getElementById('probabilityResidual').value = risk.probabilityResidual || 1;
-            document.getElementById('impactResidual').value = risk.impactResidual || 1;
-
-            // Source Details (Fix: Apply date formatter)
-            document.getElementById('sourceDepartment').value = risk.sourceDepartment || '';
-            document.getElementById('sourceLastReviewDate').value = getFormattedDate(risk.sourceLastReviewDate);
-            document.getElementById('sourceDueDate').value = getFormattedDate(risk.sourceDueDate);
-
-            calculateAndSetRiskMetrics();
-        }
-
-        function getNextRiskNumber(currentRisks) {
-            if (currentRisks.length === 0) return 1;
-            const maxNumber = currentRisks.reduce((max, risk) => {
-                const num = parseInt(risk.riskNumber, 10);
-                return isNaN(num) ? max : Math.max(max, num);
-            }, 0);
-            return maxNumber + 1;
-        }
-        
-        function populateOwnerDatalist(risks) {
-            const owners = [...new Set(risks.map(r => r.riskOwner).filter(owner => owner))].sort();
-            const datalist = document.getElementById('ownerList');
-            datalist.innerHTML = '';
-            owners.forEach(owner => {
-                const option = document.createElement('option');
-                option.value = owner;
-                datalist.appendChild(option);
             });
-        }
-
-
-        // --- Initialization (Unchanged) ---
-        document.addEventListener('DOMContentLoaded', async () => {
-            await initDB();
-            const allRisks = await getAllRisksDB();
-            populateOwnerDatalist(allRisks);
-            
-            if (editRiskNumber) {
-                console.log(`[INIT] Entering Edit Mode for Risk #${editRiskNumber}`);
-                const riskToEdit = await getRiskByNumberDB(editRiskNumber);
-                
-                if (riskToEdit) {
-                    loadFormData(riskToEdit);
-                } else {
-                    console.error('Risk not found in DB. Switching to Add New Risk mode.');
-                    formTitle.textContent = "Add New Risk";
-                    document.getElementById('riskNumber').value = getNextRiskNumber(allRisks);
-                    // Use standard YYYY-MM-DD format for new date field
-                    document.getElementById('dateRaised').value = new Date().toISOString().substring(0, 10);
-                    calculateAndSetRiskMetrics();
-                }
-            } else {
-                console.log('[INIT] Entering Add New Risk Mode.');
-                document.getElementById('riskNumber').value = getNextRiskNumber(allRisks);
-                // Use standard YYYY-MM-DD format for new date field
-                document.getElementById('dateRaised').value = new Date().toISOString().substring(0, 10);
-                calculateAndSetRiskMetrics();
-            }
         });
 
-        // --- Event Handlers (Unchanged, ensures dates are saved in a consistent format) ---
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
+        // --- DB WRAPPER (Simplified for brevity, same logic as index.html) ---
+        const DB_NAME = 'RiskRegisterDB';
+        const STORE_NAME = 'risks';
+        function initDB() { return new Promise((res, rej) => { const r = indexedDB.open(DB_NAME, 1); r.onsuccess = e => res(e.target.result); r.onerror = e => rej(e); }); }
+        async function getAllRisksDB() { const db = await initDB(); return new Promise((res) => { db.transaction([STORE_NAME]).objectStore(STORE_NAME).getAll().onsuccess = e => res(e.target.result); }); }
+        async function getRiskDB(id) { const db = await initDB(); return new Promise((res) => { db.transaction([STORE_NAME]).objectStore(STORE_NAME).get(id).onsuccess = e => res(e.target.result); }); }
+        async function putRiskDB(risk) { const db = await initDB(); return new Promise((res) => { db.transaction([STORE_NAME], 'readwrite').objectStore(STORE_NAME).put(risk).onsuccess = () => res(); }); }
 
-            // When saving, the date inputs are already in the correct YYYY-MM-DD format
-            const formData = {
+        // --- UTILS ---
+        function getFormattedDate(str) { 
+            if(!str) return ''; 
+            let d = new Date(str); 
+            if(isNaN(d.getTime())) { const p=str.split('/'); if(p.length===3) d=new Date(p[2],p[1]-1,p[0]); }
+            if(isNaN(d.getTime())) return '';
+            return d.toISOString().split('T')[0]; 
+        }
+        function safeInt(v) { return parseInt(v) || ''; }
+        function getRating(s) { if(!s)return ''; if(s<=5)return 'Low'; if(s<=10)return 'Medium'; if(s<=15)return 'High'; return 'Critical'; }
+        
+        function calcMetrics() {
+            const pi = safeInt(document.getElementById('probabilityInitial').value);
+            const ii = safeInt(document.getElementById('impactInitial').value);
+            document.getElementById('riskScoreInitial').value = (pi&&ii)? pi*ii : '';
+            document.getElementById('riskRatingInitial').value = getRating((pi&&ii)? pi*ii : '');
+
+            const pr = safeInt(document.getElementById('probabilityResidual').value);
+            const ir = safeInt(document.getElementById('impactResidual').value);
+            document.getElementById('riskScoreResidual').value = (pr&&ir)? pr*ir : '';
+            document.getElementById('riskRatingResidual').value = getRating((pr&&ir)? pr*ir : '');
+        }
+
+        // --- LOAD/SAVE ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('id'); // This is the riskNumber string
+
+        async function loadPage() {
+            const allRisks = await getAllRisksDB();
+            
+            // Populate Owner Datalist
+            const owners = [...new Set(allRisks.map(r => r.riskOwner).filter(o => o))].sort();
+            document.getElementById('ownerList').innerHTML = owners.map(o => `<option value="${o}">`).join('');
+
+            if (editId) {
+                document.getElementById('formTitle').innerText = `Edit Risk #${editId}`;
+                const risk = await getRiskDB(editId);
+                if(risk) {
+                    document.getElementById('riskNumber').value = risk.riskNumber;
+                    document.getElementById('dateRaised').value = getFormattedDate(risk.dateRaised);
+                    document.getElementById('riskItem').value = risk.riskItem || '';
+                    document.getElementById('raisedBy').value = risk.raisedBy || '';
+                    document.getElementById('impactedArea').value = risk.impactedArea || '';
+                    document.getElementById('riskCategory').value = risk.riskCategory || '';
+                    document.getElementById('relatedLaws').value = risk.relatedLaws || '';
+                    document.getElementById('nonComplianceImpact').value = risk.nonComplianceImpact || '';
+                    document.getElementById('outcomeDefinition').value = risk.outcomeDefinition || '';
+                    document.getElementById('riskOwner').value = risk.riskOwner || '';
+                    document.getElementById('riskStatus').value = risk.riskStatus || 'Open';
+                    document.getElementById('reviewDate').value = getFormattedDate(risk.reviewDate);
+                    
+                    // Load Rich Text Content into Quill
+                    quillEditors['riskIssue'].root.innerHTML = risk.riskIssue || '';
+                    quillEditors['impactStatement'].root.innerHTML = risk.impactStatement || '';
+                    quillEditors['controlsMitigations'].root.innerHTML = risk.controlsMitigations || '';
+                    quillEditors['actionsText'].root.innerHTML = risk.actionsText || '';
+                    quillEditors['notesHistory'].root.innerHTML = risk.notesHistory || '';
+
+                    document.getElementById('probabilityInitial').value = risk.probabilityInitial;
+                    document.getElementById('impactInitial').value = risk.impactInitial;
+                    document.getElementById('probabilityResidual').value = risk.probabilityResidual;
+                    document.getElementById('impactResidual').value = risk.impactResidual;
+                    
+                    document.getElementById('sourceDepartment').value = risk.sourceDepartment || '';
+                    document.getElementById('sourceLastReviewDate').value = getFormattedDate(risk.sourceLastReviewDate);
+                    document.getElementById('sourceDueDate').value = getFormattedDate(risk.sourceDueDate);
+                }
+            } else {
+                // Add Mode
+                const maxNum = allRisks.reduce((max, r) => Math.max(max, parseInt(r.riskNumber)||0), 0);
+                document.getElementById('riskNumber').value = maxNum + 1;
+                document.getElementById('dateRaised').value = new Date().toISOString().split('T')[0];
+            }
+            calcMetrics();
+        }
+
+        document.getElementById('riskForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const risk = {
                 riskNumber: String(document.getElementById('riskNumber').value),
                 dateRaised: document.getElementById('dateRaised').value,
-                raisedBy: document.getElementById('raisedBy').value,
                 riskItem: document.getElementById('riskItem').value,
-                impactStatement: document.getElementById('impactStatement').value,
+                
+                // Retrieve HTML from Quill Editors
+                riskIssue: quillEditors['riskIssue'].root.innerHTML,
+                impactStatement: quillEditors['impactStatement'].root.innerHTML,
+                controlsMitigations: quillEditors['controlsMitigations'].root.innerHTML,
+                actionsText: quillEditors['actionsText'].root.innerHTML,
+                notesHistory: quillEditors['notesHistory'].root.innerHTML,
+
+                riskOwner: document.getElementById('riskOwner').value,
+                riskStatus: document.getElementById('riskStatus').value,
+                reviewDate: document.getElementById('reviewDate').value,
+                
+                raisedBy: document.getElementById('raisedBy').value,
                 impactedArea: document.getElementById('impactedArea').value,
                 riskCategory: document.getElementById('riskCategory').value,
                 relatedLaws: document.getElementById('relatedLaws').value,
                 nonComplianceImpact: document.getElementById('nonComplianceImpact').value,
                 outcomeDefinition: document.getElementById('outcomeDefinition').value,
-                riskOwner: document.getElementById('riskOwner').value,
-                controlsMitigations: document.getElementById('controlsMitigations').value,
-                actions: document.getElementById('actions').value,
-                riskStatus: document.getElementById('riskStatus').value,
-                reviewDate: document.getElementById('reviewDate').value,
-                
-                probabilityInitial: document.getElementById('probabilityInitial').value,
-                impactInitial: document.getElementById('impactInitial').value,
+
+                probabilityInitial: safeInt(document.getElementById('probabilityInitial').value),
+                impactInitial: safeInt(document.getElementById('impactInitial').value),
                 riskScoreInitial: document.getElementById('riskScoreInitial').value,
                 riskRatingInitial: document.getElementById('riskRatingInitial').value,
-                probabilityResidual: document.getElementById('probabilityResidual').value,
-                impactResidual: document.getElementById('impactResidual').value,
+
+                probabilityResidual: safeInt(document.getElementById('probabilityResidual').value),
+                impactResidual: safeInt(document.getElementById('impactResidual').value),
                 riskScoreResidual: document.getElementById('riskScoreResidual').value,
                 riskRatingResidual: document.getElementById('riskRatingResidual').value,
 
@@ -589,27 +310,14 @@
                 sourceDueDate: document.getElementById('sourceDueDate').value,
             };
 
-            try {
-                await updateRiskInDB(formData); 
-                
-                if (editRiskNumber) {
-                    alert(`Risk #${formData.riskNumber} updated successfully!`);
-                } else {
-                    alert(`Risk #${formData.riskNumber} created successfully!`);
-                }
-                
-                window.location.href = 'index.html'; 
-            } catch (error) {
-                console.error('[IDB SAVE] Failed to save risk:', error);
-                alert('An error occurred while saving the risk to the database. See console for details.');
-            }
+            await putRiskDB(risk);
+            alert('Risk saved successfully!');
+            window.location.href = 'index.html';
         });
 
-        document.getElementById('cancelButton').addEventListener('click', () => {
-            window.location.href = 'index.html'; 
-        });
-        
-        calculateAndSetRiskMetrics();
+        document.getElementById('cancelButton').onclick = () => window.location.href = 'index.html';
+
+        loadPage();
     </script>
 </body>
 </html>
