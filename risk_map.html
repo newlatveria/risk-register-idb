@@ -6,137 +6,544 @@
     <title>Risk Register - Network Map</title>
     <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f4; }
-        /* 2. CHECK THIS STYLE: MUST HAVE HEIGHT/WIDTH */
-        #network {
-            width: 100%;
-            height: 90vh; 
-            border: 1px solid lightgray;
-            background-color: white;
+        :root {
+            --primary-color: #007bff;
+            --danger-color: #d9534f;
+            --warning-color: #ffc107;
+            --success-color: #28a745;
+            --info-color: #17a2b8;
+            --light-bg: #f4f4f4;
+            --white: #fff;
+            --text-color: #333;
         }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            background-color: var(--light-bg);
+        }
+
         .header {
-            background-color: #007bff;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #0056b3 100%);
             color: white;
-            padding: 15px;
-            text-align: center;
+            padding: 20px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            gap: 15px;
         }
-        .header button {
-            background-color: #ffc107;
-            color: #333;
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background-color: var(--warning-color);
+            color: var(--text-color);
             border: none;
-            padding: 8px 15px;
+            padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background-color: white;
+            color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .control-group select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Legend */
+        .legend {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            min-width: 200px;
+        }
+
+        .legend h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: var(--text-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #333;
+        }
+
+        .legend-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Network Container */
+        .network-wrapper {
+            position: relative;
+            height: calc(100vh - 140px);
+        }
+
+        #network {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #fafafa;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
             font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            flex-direction: column;
+            gap: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            flex-direction: column;
+            gap: 15px;
+            color: #666;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .empty-state h2 {
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast {
+            min-width: 250px;
+            padding: 15px 20px;
+            border-radius: 4px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease-out;
+            margin-bottom: 10px;
+        }
+
+        .toast-info { background-color: var(--info-color); }
+        .toast-error { background-color: var(--danger-color); }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .controls-panel {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .legend {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin: 10px;
+            }
+
+            .stats-bar {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                margin: 10px;
+                flex-wrap: wrap;
+            }
+
+            .network-wrapper {
+                height: calc(100vh - 250px);
+            }
         }
     </style>
 </head>
 <body>
+    <div class="toast-container" id="toastContainer"></div>
+
     <div class="header">
-        <h1>Risk Dependency Map</h1>
-        <button onclick="window.location.href='index.html'">⬅️ Back to Register</button>
+        <h1>
+            <span>🕸️</span>
+            <span>Risk Dependency Map</span>
+        </h1>
+        <div class="header-controls">
+            <button class="btn-primary" onclick="window.location.href='index.html'">
+                ← Back to Register
+            </button>
+            <button id="resetViewButton">🔄 Reset View</button>
+            <button id="exportImageButton">📸 Export Image</button>
+        </div>
     </div>
-    <div id="network"></div>
+
+    <div class="controls-panel">
+        <div class="control-group">
+            <label for="filterRating">Filter by Rating:</label>
+            <select id="filterRating">
+                <option value="">All Risks</option>
+                <option value="Critical">Critical</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="filterStatus">Filter by Status:</label>
+            <select id="filterStatus">
+                <option value="">All Statuses</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Closed">Closed</option>
+                <option value="On Hold">On Hold</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>
+                <input type="checkbox" id="showOrphansCheckbox" checked>
+                Show Unlinked Risks
+            </label>
+        </div>
+    </div>
+
+    <div class="network-wrapper">
+        <div id="network">
+            <div class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading risk network...</p>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>Risk Ratings</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #6c757d;"></div>
+                <span class="legend-label">Critical</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #f0ad4e;"></div>
+                <span class="legend-label">High</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #5cb85c;"></div>
+                <span class="legend-label">Medium</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #5bc0de;"></div>
+                <span class="legend-label">Low</span>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalNodes">0</div>
+                <div class="stat-label">Risks</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalEdges">0</div>
+                <div class="stat-label">Links</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="orphanNodes">0</div>
+                <div class="stat-label">Unlinked</div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // === MODULE 1: IndexedDB Configuration (Reused from index.html) ===
-        const DB_NAME = 'RiskRegisterDB';
-        const DB_VERSION = 1;
-        const STORE_NAME = 'risks';
+        // =============================================
+        // CONFIGURATION
+        // =============================================
+        const CONFIG = {
+            DB_NAME: 'RiskRegisterDB',
+            DB_VERSION: 1,
+            STORE_NAME: 'risks',
+            COLORS: {
+                Critical: '#6c757d',
+                High: '#f0ad4e',
+                Medium: '#5cb85c',
+                Low: '#5bc0de'
+            }
+        };
+
+        let network;
+        let allRisks = [];
+        let allNodes = [];
+        let allEdges = [];
+
+        // =============================================
+        // DATABASE
+        // =============================================
         let db;
 
         function initDB() {
             return new Promise((resolve, reject) => {
-                if (db) { resolve(db); return; }
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                if (db) {
+                    resolve(db);
+                    return;
+                }
+
+                const request = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VERSION);
                 request.onerror = (e) => reject(e.target.error);
-                request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
                 request.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        db.createObjectStore(STORE_NAME, { keyPath: 'riskNumber' });
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains(CONFIG.STORE_NAME)) {
+                        database.createObjectStore(CONFIG.STORE_NAME, { keyPath: 'riskNumber' });
                     }
                 };
             });
         }
 
         async function getAllRisksDB() {
-            const db = await initDB();
-            return new Promise((res, rej) => {
-                const tx = db.transaction([STORE_NAME], 'readonly');
-                const req = tx.objectStore(STORE_NAME).getAll();
-                req.onsuccess = (e) => res(e.target.result);
-                req.onerror = (e) => rej(e.target.error);
+            const database = await initDB();
+            return new Promise((resolve, reject) => {
+                const tx = database.transaction([CONFIG.STORE_NAME], 'readonly');
+                const request = tx.objectStore(CONFIG.STORE_NAME).getAll();
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e.target.error);
             });
         }
 
-        // === MODULE 2: vis.js Network Generation ===
-        
-        const COLORS = {
-            Critical: '#d9534f', // Red
-            High: '#f0ad4e',     // Orange
-            Medium: '#5cb85c',   // Green
-            Low: '#5bc0de',      // Blue
-            Open: '#dc3545',
-            Closed: '#343a40'
-        };
+        // =============================================
+        // UI UTILITIES
+        // =============================================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
 
-        // --- Replace this entire function in risk_map.html ---
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function updateStats(nodes, edges) {
+            const orphans = nodes.filter(nodeId => {
+                return !edges.some(e => e.from === nodeId || e.to === nodeId);
+            });
+
+            document.getElementById('totalNodes').textContent = nodes.length;
+            document.getElementById('totalEdges').textContent = edges.length;
+            document.getElementById('orphanNodes').textContent = orphans.length;
+        }
+
+        // =============================================
+        // NETWORK GENERATION
+        // =============================================
         function getRiskNode(risk) {
             const score = risk.riskScoreResidual || 0;
             const rating = risk.riskRatingResidual || 'Low';
             const status = risk.riskStatus || 'Open';
-    
-        // Nodes represent the risks
+            
             return {
-            id: risk.riskNumber,
-            label: `Risk ${risk.riskNumber}: ${risk.riskItem}`,
-            title: `Owner: ${risk.riskOwner}\nStatus: ${status}\nResidual Score: ${score}`,
-            group: rating, // Group by residual rating
-            color: {
-            background: COLORS[rating],
-            border: COLORS[rating],
-            highlight: { background: '#fff', border: COLORS[rating] }
-        },
-        font: { color: (rating === 'Critical' || rating === 'High') ? 'white' : 'black' },
-        // Use size based on Residual Score (e.g., score * 1.5)
-        value: score * 1.5 + 5, // Minimum size of 5 + score factor
-    };
-}
-// --- End of replacement ---
+                id: risk.riskNumber,
+                label: `${risk.riskNumber}\n${risk.riskItem.substring(0, 30)}${risk.riskItem.length > 30 ? '...' : ''}`,
+                title: `Risk ${risk.riskNumber}: ${risk.riskItem}\nOwner: ${risk.riskOwner}\nStatus: ${status}\nRating: ${rating} (Score: ${score})`,
+                group: rating,
+                color: {
+                    background: CONFIG.COLORS[rating],
+                    border: CONFIG.COLORS[rating],
+                    highlight: {
+                        background: '#fff',
+                        border: CONFIG.COLORS[rating]
+                    }
+                },
+                font: {
+                    color: (rating === 'Critical' || rating === 'High') ? 'white' : 'black',
+                    size: 12
+                },
+                value: score * 2 + 10,
+                borderWidth: 2,
+                borderWidthSelected: 4,
+                // Store metadata for filtering
+                _rating: rating,
+                _status: status
+            };
+        }
 
         function drawNetwork(risks) {
+            const container = document.getElementById('network');
+            container.innerHTML = '';
+
             const nodes = [];
             const edges = [];
-            
             const existingRiskNumbers = new Set(risks.map(r => r.riskNumber));
 
+            // Create nodes
             risks.forEach(risk => {
                 nodes.push(getRiskNode(risk));
 
-                // --- EDGE CREATION LOGIC ---
+                // Create edges
                 if (risk.relatedRisks) {
-                    // Normalize the input string: split by comma, trim whitespace, and filter empty strings
-                    const relatedIds = risk.relatedRisks.split(',').map(id => String(id).trim()).filter(id => id.length > 0);
+                    const relatedIds = risk.relatedRisks
+                        .split(',')
+                        .map(id => String(id).trim())
+                        .filter(id => id.length > 0);
 
                     relatedIds.forEach(targetId => {
-                        // Only create an edge if the target risk actually exists in the dataset
                         if (existingRiskNumbers.has(targetId)) {
                             edges.push({
-                                from: risk.riskNumber, // Source/Cause
-                                to: targetId,          // Target/Effect
-                                arrows: 'to',          
-                                color: { color: '#888', highlight: COLORS[risk.riskRatingResidual] || '#888' },
-                                title: `Risk ${risk.riskNumber} is linked to Risk ${targetId}`,
-                                value: risk.riskScoreResidual 
+                                from: risk.riskNumber,
+                                to: targetId,
+                                arrows: 'to',
+                                color: {
+                                    color: '#888',
+                                    highlight: CONFIG.COLORS[risk.riskRatingResidual] || '#888'
+                                },
+                                title: `${risk.riskNumber} → ${targetId}`,
+                                width: 2,
+                                value: risk.riskScoreResidual || 1
                             });
                         }
                     });
                 }
             });
+
+            // Store for filtering
+            allNodes = nodes;
+            allEdges = edges;
 
             const data = {
                 nodes: new vis.DataSet(nodes),
@@ -147,66 +554,206 @@
                 nodes: {
                     shape: 'dot',
                     scaling: {
-                        min: 10,
-                        max: 30,
-                        label: { min: 8, max: 20 },
+                        min: 15,
+                        max: 40,
+                        label: {
+                            min: 10,
+                            max: 20
+                        }
                     },
-                    shadow: true
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.2)',
+                        size: 10,
+                        x: 3,
+                        y: 3
+                    }
                 },
                 edges: {
                     width: 2,
-                    shadow: true,
-                    smooth: { type: 'dynamic' }
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.1)',
+                        size: 5,
+                        x: 2,
+                        y: 2
+                    },
+                    smooth: {
+                        type: 'dynamic',
+                        roundness: 0.5
+                    }
                 },
                 groups: {
-                    Critical: { color: { background: COLORS.Critical, border: 'black' } },
-                    High: { color: { background: COLORS.High, border: 'black' } },
-                    Medium: { color: { background: COLORS.Medium, border: 'black' } },
-                    Low: { color: { background: COLORS.Low, border: 'black' } },
+                    Critical: { color: { background: CONFIG.COLORS.Critical, border: '#000' } },
+                    High: { color: { background: CONFIG.COLORS.High, border: '#000' } },
+                    Medium: { color: { background: CONFIG.COLORS.Medium, border: '#000' } },
+                    Low: { color: { background: CONFIG.COLORS.Low, border: '#000' } }
                 },
                 physics: {
                     forceAtlas2Based: {
-                        gravitationalConstant: -100,
-                        centralGravity: 0.005,
-                        springLength: 100,
-                        springConstant: 0.18
+                        gravitationalConstant: -80,
+                        centralGravity: 0.01,
+                        springLength: 150,
+                        springConstant: 0.08,
+                        avoidOverlap: 0.5
                     },
-                    maxVelocity: 146,
+                    maxVelocity: 50,
                     solver: 'forceAtlas2Based',
                     timestep: 0.35,
-                    stabilization: { iterations: 150 }
+                    stabilization: {
+                        enabled: true,
+                        iterations: 200,
+                        updateInterval: 25
+                    }
                 },
                 interaction: {
                     hover: true,
-                    tooltipDelay: 200,
-                    hideEdgesOnDrag: true
+                    tooltipDelay: 100,
+                    hideEdgesOnDrag: true,
+                    navigationButtons: true,
+                    keyboard: {
+                        enabled: true
+                    }
                 }
             };
 
-            const container = document.getElementById('network');
-            new vis.Network(container, data, options);
-            
-            // Show the image of what they should see (Trigger diagram)
-            
+            network = new vis.Network(container, data, options);
 
- 
+            // Event listeners
+            network.on('click', (params) => {
+                if (params.nodes.length > 0) {
+                    const riskNumber = params.nodes[0];
+                    if (confirm(`Open Risk ${riskNumber} in editor?`)) {
+                        window.location.href = `risk_form.html?id=${riskNumber}`;
+                    }
+                }
+            });
+
+            network.on('stabilizationProgress', (params) => {
+                const progress = Math.round((params.iterations / params.total) * 100);
+                console.log(`Stabilizing: ${progress}%`);
+            });
+
+            network.on('stabilizationIterationsDone', () => {
+                showToast('Network layout complete', 'info');
+            });
+
+            updateStats(nodes.map(n => n.id), edges);
         }
 
-        // === MODULE 3: Initialization ===
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const risks = await getAllRisksDB();
-                if (risks.length === 0) {
-                    document.getElementById('network').innerHTML = '<div style="padding: 50px; text-align: center;">No risks found in the database. Please load data via the main register view.</div>';
-                    return;
-                }
-                drawNetwork(risks);
-            } catch (e) {
-                console.error("Error drawing network:", e);
-                document.getElementById('network').innerHTML = '<div style="padding: 50px; text-align: center; color: red;">Error loading the risk data or drawing the network. Check the console for details.</div>';
+        // =============================================
+        // FILTERING
+        // =============================================
+        function applyFilters() {
+            const ratingFilter = document.getElementById('filterRating').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            const showOrphans = document.getElementById('showOrphansCheckbox').checked;
+
+            let filteredNodes = [...allNodes];
+            let filteredEdges = [...allEdges];
+
+            // Apply rating filter
+            if (ratingFilter) {
+                filteredNodes = filteredNodes.filter(n => n._rating === ratingFilter);
+            }
+
+            // Apply status filter
+            if (statusFilter) {
+                filteredNodes = filteredNodes.filter(n => n._status === statusFilter);
+            }
+
+            // Filter edges to only include those with both nodes visible
+            const nodeIds = new Set(filteredNodes.map(n => n.id));
+            filteredEdges = filteredEdges.filter(e => 
+                nodeIds.has(e.from) && nodeIds.has(e.to)
+            );
+
+            // Filter orphans if needed
+            if (!showOrphans) {
+                const connectedNodes = new Set();
+                filteredEdges.forEach(e => {
+                    connectedNodes.add(e.from);
+                    connectedNodes.add(e.to);
+                });
+                filteredNodes = filteredNodes.filter(n => connectedNodes.has(n.id));
+            }
+
+            // Update network
+            if (network) {
+                network.setData({
+                    nodes: new vis.DataSet(filteredNodes),
+                    edges: new vis.DataSet(filteredEdges)
+                });
+
+                updateStats(filteredNodes.map(n => n.id), filteredEdges);
+                showToast(`Filtered to ${filteredNodes.length} risks`, 'info');
+            }
+        }
+
+        // =============================================
+        // CONTROLS
+        // =============================================
+        document.getElementById('filterRating').addEventListener('change', applyFilters);
+        document.getElementById('filterStatus').addEventListener('change', applyFilters);
+        document.getElementById('showOrphansCheckbox').addEventListener('change', applyFilters);
+
+        document.getElementById('resetViewButton').addEventListener('click', () => {
+            if (network) {
+                network.fit({
+                    animation: {
+                        duration: 1000,
+                        easingFunction: 'easeInOutQuad'
+                    }
+                });
+                showToast('View reset', 'info');
             }
         });
 
+        document.getElementById('exportImageButton').addEventListener('click', () => {
+            if (network) {
+                const canvas = network.canvas.frame.canvas;
+                const dataURL = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `risk_map_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = dataURL;
+                link.click();
+                showToast('Image exported', 'info');
+            }
+        });
+
+        // =============================================
+        // INITIALIZATION
+        // =============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const risks = await getAllRisksDB();
+                allRisks = risks;
+
+                if (risks.length === 0) {
+                    document.getElementById('network').innerHTML = `
+                        <div class="empty-state">
+                            <h2>No Risks Found</h2>
+                            <p>Please load data via the main register view.</p>
+                            <button onclick="window.location.href='index.html'">
+                                Go to Register
+                            </button>
+                        </div>`;
+                    return;
+                }
+
+                drawNetwork(risks);
+            } catch (error) {
+                console.error("Error loading network:", error);
+                document.getElementById('network').innerHTML = `
+                    <div class="empty-state">
+                        <h2>Error Loading Data</h2>
+                        <p>Failed to load the risk network. Please check the console for details.</p>
+                        <button onclick="window.location.reload()">
+                            Retry
+                        </button>
+                    </div>`;
+            }
+        });
     </script>
 </body>
 </html>

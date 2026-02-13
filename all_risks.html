@@ -3,397 +3,702 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Full Risk Report</title>
+    <title>All Risks - Full Report</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            background-color: #e9ecef;
-            color: #333;
+        :root {
+            --primary-color: #007bff;
+            --primary-dark: #0056b3;
+            --success-color: #28a745;
+            --danger-color: #d9534f;
+            --warning-color: #ffc107;
+            --light-bg: #f4f4f4;
+            --white: #fff;
+            --border-color: #ddd;
+            --text-color: #333;
         }
-        .report-header {
-            background-color: #0056b3;
-            color: white;
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            margin: 0;
             padding: 20px;
+            background-color: var(--light-bg);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: var(--white);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* Action Bar */
+        .action-bar {
             display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
         }
-        .report-header h1 { margin: 0; font-size: 24px; }
-        
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 20px;
-        }
 
-        /* CONTROLS STYLING */
-        .controls {
-            margin-bottom: 20px;
+        .action-bar-left {
             display: flex;
             gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
         }
-        button, select {
+
+        button {
             padding: 10px 20px;
-            background-color: #007bff;
+            background-color: var(--primary-color);
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
-        }
-        select {
-            background-color: white;
-            color: #333;
-            border: 1px solid #ccc;
-            font-weight: bold;
-        }
-        button:hover { background-color: #0056b3; }
-        .btn-secondary { background-color: #6c757d; }
-        .btn-secondary:hover { background-color: #5a6268; }
-        .btn-print { background-color: #28a745; }
-        .btn-print:hover { background-color: #1e7e34; }
-
-        .sort-label {
-            font-weight: bold;
-            margin-left: 10px;
-            color: #555;
-        }
-
-        .btn-edit-card {
-            background-color: #ffc107;
-            color: #333;
-            padding: 5px 12px;
             font-size: 14px;
-            font-weight: bold;
-            margin-left: 15px;
-            border-radius: 4px;
-            text-decoration: none;
-            border: 1px solid #e0a800;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-weight: 500;
         }
-        .btn-edit-card:hover { background-color: #e0a800; }
 
-        /* RISK CARD STYLING */
-        .risk-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            overflow: hidden;
-            page-break-inside: avoid;
-            border: 1px solid #ddd;
+        button:hover:not(:disabled) {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-        .card-header {
-            background-color: #f1f3f5;
-            padding: 15px 20px;
-            border-bottom: 1px solid #ddd;
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-success { background-color: var(--success-color); }
+        .btn-success:hover { background-color: #1e7e34; }
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #c9302c; }
+
+        /* Search Box */
+        .search-box {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 5px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 8px 12px;
+            min-width: 300px;
         }
-        .header-left { display: flex; align-items: center; }
-        .risk-id { font-size: 1.3em; font-weight: bold; color: #0056b3; }
-        
-        .risk-status {
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.9em;
-            font-weight: bold;
-            background-color: #e2e3e5;
-            text-transform: uppercase;
+
+        .search-box input {
+            border: none;
+            outline: none;
+            flex: 1;
+            font-size: 14px;
         }
-        .status-Open { background-color: #d1ecf1; color: #0c5460; }
-        .status-Critical { background-color: #f8d7da; color: #721c24; }
-        
-        .card-body {
-            padding: 20px;
+
+        .search-box .clear-search {
+            cursor: pointer;
+            color: #999;
+            display: none;
+        }
+
+        .search-box .clear-search.visible {
+            display: block;
+        }
+
+        /* Risk Cards */
+        .risk-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
-        
-        .full-width { grid-column: 1 / -1; }
-        
-        /* Section Separators inside card */
-        .section-title {
-            grid-column: 1 / -1;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 5px;
-            margin-top: 10px;
-            margin-bottom: 10px;
-            font-size: 1.1em;
+
+        .risk-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .risk-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .risk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .risk-number {
+            font-size: 24px;
             font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .risk-badges {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-status {
+            background-color: #e9ecef;
             color: #495057;
         }
 
-        .field-group { margin-bottom: 5px; }
-        
-        .field-group h4 {
-            margin: 0 0 4px 0;
-            color: #666;
-            font-size: 0.8em;
+        .badge-status.open { background-color: #dc3545; color: white; }
+        .badge-status.in-progress { background-color: #ffc107; color: #333; }
+        .badge-status.closed { background-color: #28a745; color: white; }
+        .badge-status.on-hold { background-color: #6c757d; color: white; }
+
+        .badge-rating {
+            padding: 6px 12px;
+            font-weight: 700;
+        }
+
+        .badge-rating.low { background-color: #d4edda; color: #155724; }
+        .badge-rating.medium { background-color: #fff3cd; color: #856404; }
+        .badge-rating.high { background-color: #f8d7da; color: #721c24; }
+        .badge-rating.critical { background-color: #6c757d; color: white; }
+
+        .risk-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        .risk-section {
+            margin-bottom: 15px;
+        }
+
+        .risk-section-title {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .field-value { font-size: 0.95em; line-height: 1.5; color: #222; }
-        /* Rich Text Content Styles */
-        .field-value p { margin-top: 0; margin-bottom: 5px; }
-        .field-value ul { margin-top: 0; padding-left: 20px; }
 
-        .score-box { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-        .rating-Low { background-color: #d4edda; color: #155724; }
-        .rating-Medium { background-color: #fff3cd; color: #856404; }
-        .rating-High { background-color: #f8d7da; color: #721c24; }
-        .rating-Critical { background-color: #343a40; color: #fff; }
+        .risk-section-content {
+            color: var(--text-color);
+            line-height: 1.6;
+        }
 
-        /* Print optimizations */
+        .risk-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            margin-top: 15px;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+
+        .meta-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .review-date {
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .review-date.overdue {
+            background-color: #f44336;
+            color: white;
+            font-weight: 600;
+        }
+
+        .review-date.due-next-week {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .review-date.due-soon {
+            background-color: #ffeb3b;
+            color: #333;
+        }
+
+        /* Score Display */
+        .score-comparison {
+            display: flex;
+            gap: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .score-box {
+            flex: 1;
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Print Styles */
         @media print {
-            body { background-color: white; }
-            .controls, .report-header button, .btn-edit-card { display: none !important; }
-            .container { max-width: 1000%; margin: 0; padding: 0; }
-            .risk-card { box-shadow: none; border: 1px solid #000; page-break-inside: avoid; }
-            .card-header { background-color: #eee !important; -webkit-print-color-adjust: exact; }
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .action-bar, button {
+                display: none;
+            }
+
+            .risk-card {
+                page-break-inside: avoid;
+                border: 1px solid #ddd;
+                margin-bottom: 20px;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .action-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+
+            .risk-meta {
+                grid-template-columns: 1fr;
+            }
+
+            .score-comparison {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-
-    <div class="report-header">
-        <h1>Risk Register - Full Report</h1>
-    </div>
-
     <div class="container">
-        <div class="controls">
-            <button onclick="window.location.href='index.html'" class="btn-secondary">← Back to Dashboard</button>
-            <button onclick="window.print()" class="btn-print">🖨️ Print / Save PDF</button>
-            
-            <span class="sort-label">Sort By:</span>
-            <select id="sortSelect" onchange="handleSort()">
-                <option value="id_asc">Risk Number (Ascending)</option>
-                <option value="score_desc">Highest Residual Risk (Critical First)</option>
-                <option value="initial_score_desc">Highest Initial Risk (Inherent)</option> <option value="review_asc">Review Date (Overdue/Soonest)</option>
-                <option value="date_desc">Date Raised (Newest First)</option>
-                <option value="owner_asc">Risk Owner (A-Z)</option>
-            </select>
+        <h1>📄 Full Risk Report</h1>
+        <p class="subtitle">Complete listing of all risks in the register</p>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+            <div class="action-bar-left">
+                <button onclick="window.location.href='index.html'">
+                    ← Back to Register
+                </button>
+                <button onclick="window.print()" class="btn-success">
+                    🖨️ Print Report
+                </button>
+                <button id="exportPdfButton" class="btn-success">
+                    📄 Export PDF
+                </button>
+            </div>
+            <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="searchInput" placeholder="Search risks..." aria-label="Search risks">
+                <span class="clear-search" id="clearSearch" title="Clear search">✕</span>
+            </div>
         </div>
 
-        <div id="riskContainer">
-            <p style="text-align:center; padding:20px;">Loading risks...</p>
+        <!-- Risk Grid -->
+        <div id="riskGrid" class="risk-grid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading risks...</p>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- DB CONFIGURATION ---
-        const DB_NAME = 'RiskRegisterDB';
-        const DB_VERSION = 1;
-        const STORE_NAME = 'risks';
-        
-        let loadedRisks = [];
+        // =============================================
+        // CONFIGURATION
+        // =============================================
+        const CONFIG = {
+            DB_NAME: 'RiskRegisterDB',
+            DB_VERSION: 1,
+            STORE_NAME: 'risks',
+            DEBOUNCE_MS: 300
+        };
+
+        // =============================================
+        // INDEXEDDB
+        // =============================================
+        let db;
 
         function initDB() {
             return new Promise((resolve, reject) => {
-                if (!window.indexedDB) {
-                    reject(new Error("IndexedDB not supported."));
+                if (db) {
+                    resolve(db);
                     return;
                 }
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                const request = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VERSION);
                 request.onerror = (e) => reject(e.target.error);
-                request.onsuccess = (e) => resolve(e.target.result);
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onupgradeneeded = (e) => {
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains(CONFIG.STORE_NAME)) {
+                        database.createObjectStore(CONFIG.STORE_NAME, { keyPath: 'riskNumber' });
+                    }
+                };
             });
         }
 
         async function getAllRisksDB() {
-            try {
-                const db = await initDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction([STORE_NAME], 'readonly');
-                    const req = tx.objectStore(STORE_NAME).getAll();
-                    req.onsuccess = (e) => resolve(e.target.result);
-                    req.onerror = (e) => reject(e.target.error);
-                });
-            } catch (error) {
-                console.error("Error accessing database:", error);
-                return [];
-            }
-        }
-
-        function getRiskRatingClass(rating) {
-            switch (rating) {
-                case 'Low': return 'rating-Low';
-                case 'Medium': return 'rating-Medium';
-                case 'High': return 'rating-High';
-                case 'Critical': return 'rating-Critical';
-                default: return '';
-            }
-        }
-
-        // --- SORTING LOGIC ---
-        function handleSort() {
-            const sortValue = document.getElementById('sortSelect').value;
-            
-            loadedRisks.sort((a, b) => {
-                switch (sortValue) {
-                    case 'score_desc':
-                        // Sort by Residual Score (High to Low)
-                        return (parseInt(b.riskScoreResidual) || 0) - (parseInt(a.riskScoreResidual) || 0);
-                    
-                    case 'initial_score_desc':
-                        // Sort by Initial Score (High to Low) - NEW
-                        return (parseInt(b.riskScoreInitial) || 0) - (parseInt(a.riskScoreInitial) || 0);
-
-                    case 'review_asc':
-                        if (!a.reviewDate) return 1;
-                        if (!b.reviewDate) return -1;
-                        return new Date(a.reviewDate) - new Date(b.reviewDate);
-                    
-                    case 'date_desc':
-                        return new Date(b.dateRaised) - new Date(a.dateRaised);
-                    
-                    case 'owner_asc':
-                        return (a.riskOwner || '').localeCompare(b.riskOwner || '');
-
-                    case 'id_asc':
-                    default:
-                        return parseInt(a.riskNumber) - parseInt(b.riskNumber);
-                }
+            const database = await initDB();
+            return new Promise((resolve, reject) => {
+                const tx = database.transaction([CONFIG.STORE_NAME], 'readonly');
+                const request = tx.objectStore(CONFIG.STORE_NAME).getAll();
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e.target.error);
             });
-
-            renderCards(loadedRisks);
         }
 
-        // --- RENDERING LOGIC ---
-        function renderCards(risks) {
-            const container = document.getElementById('riskContainer');
-            container.innerHTML = ''; 
+        // =============================================
+        // UTILITIES
+        // =============================================
+        function sanitizeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
 
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function calculateDateMetrics(dateRaised, reviewDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            let ageDays = '';
+            if (dateRaised) {
+                const raised = new Date(dateRaised);
+                ageDays = Math.max(0, Math.ceil((today - raised) / (86400000)));
+            }
+            
+            let reviewDaysDiff = Infinity;
+            let reviewClass = '';
+            if (reviewDate) {
+                const review = new Date(reviewDate);
+                review.setHours(0, 0, 0, 0);
+                reviewDaysDiff = Math.ceil((review - today) / (86400000));
+                
+                if (reviewDaysDiff < 0) {
+                    reviewClass = 'overdue';
+                } else if (reviewDaysDiff <= 7) {
+                    reviewClass = 'due-next-week';
+                } else if (reviewDaysDiff <= 28) {
+                    reviewClass = 'due-soon';
+                }
+            }
+            
+            return { ageDays, reviewDaysDiff, reviewClass };
+        }
+
+        // =============================================
+        // RENDERING
+        // =============================================
+        let allRisks = [];
+        let filteredRisks = [];
+
+        function renderRisks(risks) {
+            const grid = document.getElementById('riskGrid');
+            
             if (risks.length === 0) {
-                container.innerHTML = '<p style="text-align:center;">No risks found in the database.</p>';
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <h2>No risks found</h2>
+                        <p>Try adjusting your search or return to the main register.</p>
+                        <button onclick="window.location.href='index.html'" style="margin-top: 20px;">
+                            Return to Register
+                        </button>
+                    </div>`;
                 return;
             }
 
-            risks.forEach(risk => {
-                const card = document.createElement('div');
-                card.className = 'risk-card';
-                
-                // Rich text fallbacks
-                const desc = risk.riskIssue || '<em>No description provided.</em>';
-                const impact = risk.impactStatement || '<em>No impact details.</em>';
-                const controls = risk.controlsMitigations || '<em>No controls defined.</em>';
-                const actions = risk.actionsText || '<em>No active actions.</em>';
-                const history = risk.notesHistory || '<em>No history.</em>';
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div class="header-left">
-                            <span class="risk-id">#${risk.riskNumber}: ${risk.riskItem}</span>
-                            <button class="btn-edit-card" onclick="window.location.href='risk_form.html?id=${risk.riskNumber}'">✏️ Edit</button>
-                        </div>
-                        <div class="risk-status status-${risk.riskStatus}">${risk.riskStatus}</div>
-                    </div>
-                    <div class="card-body">
-                        
-                        <div class="field-group">
-                            <h4>Risk Owner</h4>
-                            <div class="field-value">${risk.riskOwner || 'Unassigned'}</div>
-                        </div>
-                        <div class="field-group">
-                            <h4>Next Review Date</h4>
-                            <div class="field-value" style="font-weight:bold;">${risk.reviewDate || 'N/A'}</div>
-                        </div>
-                        
-                        <div class="section-title">Context & Classification</div>
-                        <div class="field-group">
-                            <h4>Date Raised</h4>
-                            <div class="field-value">${risk.dateRaised || '-'}</div>
-                        </div>
-                        <div class="field-group">
-                            <h4>Raised By</h4>
-                            <div class="field-value">${risk.raisedBy || '-'}</div>
-                        </div>
-                        <div class="field-group">
-                            <h4>Risk Category</h4>
-                            <div class="field-value">${risk.riskCategory || '-'}</div>
-                        </div>
-                        <div class="field-group">
-                            <h4>Impacted Area</h4>
-                            <div class="field-value">${risk.impactedArea || '-'}</div>
-                        </div>
-
-                        <div class="section-title">Compliance & Outcome</div>
-                        <div class="field-group">
-                            <h4>Related Laws/Regs</h4>
-                            <div class="field-value">${risk.relatedLaws || 'None'}</div>
-                        </div>
-                        <div class="field-group">
-                            <h4>Non-Compliance Impact</h4>
-                            <div class="field-value">${risk.nonComplianceImpact || '-'}</div>
-                        </div>
-                        <div class="field-group full-width">
-                            <h4>Desired Outcome</h4>
-                            <div class="field-value">${risk.outcomeDefinition || '-'}</div>
-                        </div>
-
-                        <div class="section-title">Risk Description</div>
-                        <div class="field-group full-width">
-                            <h4>Risk Issue</h4>
-                            <div class="field-value">${desc}</div>
-                        </div>
-                        <div class="field-group full-width">
-                            <h4>Impact Statement</h4>
-                            <div class="field-value">${impact}</div>
-                        </div>
-
-                        <div class="section-title">Risk Assessment (Scores)</div>
-                        <div class="field-group">
-                            <h4>Initial Risk (Inherent)</h4>
-                            <div class="field-value">
-                                Prob: ${risk.probabilityInitial || '-'} × Imp: ${risk.impactInitial || '-'} = 
-                                <span class="score-box ${getRiskRatingClass(risk.riskRatingInitial)}">${risk.riskScoreInitial || '-'} (${risk.riskRatingInitial || '-'})</span>
-                            </div>
-                        </div>
-                        <div class="field-group">
-                            <h4>Residual Risk (Current)</h4>
-                            <div class="field-value">
-                                Prob: ${risk.probabilityResidual || '-'} × Imp: ${risk.impactResidual || '-'} = 
-                                <span class="score-box ${getRiskRatingClass(risk.riskRatingResidual)}">${risk.riskScoreResidual || '-'} (${risk.riskRatingResidual || '-'})</span>
-                            </div>
-                        </div>
-
-                        <div class="section-title">Mitigation & Action Plan</div>
-                        <div class="field-group full-width">
-                            <h4>Controls & Mitigations</h4>
-                            <div class="field-value">${controls}</div>
-                        </div>
-
-                        <div class="field-group full-width">
-                            <h4>Current Actions Text</h4>
-                            <div class="field-value">${actions}</div>
-                        </div>
-                        
-                        <div class="field-group full-width">
-                            <h4>Notes / History</h4>
-                            <div class="field-value">${history}</div>
-                        </div>
-                        
-                        <div class="field-group full-width" style="margin-top:10px; border-top:1px dashed #ccc; padding-top:5px; font-size:0.85em; color:#777;">
-                            <strong>Source Data:</strong> Dept: ${risk.sourceDepartment || 'N/A'} | Last Review: ${risk.sourceLastReviewDate || 'N/A'} | Due Date: ${risk.sourceDueDate || 'N/A'}
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+            grid.innerHTML = risks.map(risk => createRiskCard(risk)).join('');
         }
 
-        // Initial Load
+        function createRiskCard(risk) {
+            const metrics = calculateDateMetrics(risk.dateRaised, risk.reviewDate);
+            const statusClass = (risk.riskStatus || 'open').toLowerCase().replace(/\s+/g, '-');
+            const ratingClass = (risk.riskRatingResidual || 'low').toLowerCase();
+
+            return `
+                <div class="risk-card">
+                    <div class="risk-header">
+                        <div class="risk-number">${sanitizeHTML(risk.riskNumber)}</div>
+                        <div class="risk-badges">
+                            <span class="badge badge-status ${statusClass}">
+                                ${sanitizeHTML(risk.riskStatus || 'Open')}
+                            </span>
+                            <span class="badge badge-rating ${ratingClass}">
+                                ${sanitizeHTML(risk.riskRatingResidual || 'N/A')}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="risk-title">${sanitizeHTML(risk.riskItem || 'Untitled Risk')}</div>
+
+                    ${risk.impactStatement ? `
+                        <div class="risk-section">
+                            <div class="risk-section-title">Impact Statement</div>
+                            <div class="risk-section-content">${sanitizeHTML(risk.impactStatement)}</div>
+                        </div>
+                    ` : ''}
+
+                    ${risk.controlsMitigations ? `
+                        <div class="risk-section">
+                            <div class="risk-section-title">Controls & Mitigations</div>
+                            <div class="risk-section-content">${sanitizeHTML(risk.controlsMitigations)}</div>
+                        </div>
+                    ` : ''}
+
+                    ${risk.actionsText ? `
+                        <div class="risk-section">
+                            <div class="risk-section-title">Current Actions</div>
+                            <div class="risk-section-content">${sanitizeHTML(risk.actionsText)}</div>
+                        </div>
+                    ` : ''}
+
+                    <div class="score-comparison">
+                        <div class="score-box">
+                            <div class="score-label">Initial Score</div>
+                            <div class="score-value" style="color: ${getScoreColor(risk.riskScoreInitial)}">
+                                ${risk.riskScoreInitial || 'N/A'}
+                            </div>
+                            <div class="score-label">${sanitizeHTML(risk.riskRatingInitial || '')}</div>
+                        </div>
+                        <div class="score-box">
+                            <div class="score-label">Residual Score</div>
+                            <div class="score-value" style="color: ${getScoreColor(risk.riskScoreResidual)}">
+                                ${risk.riskScoreResidual || 'N/A'}
+                            </div>
+                            <div class="score-label">${sanitizeHTML(risk.riskRatingResidual || '')}</div>
+                        </div>
+                    </div>
+
+                    <div class="risk-meta">
+                        <div class="meta-item">
+                            <div class="meta-label">Risk Owner</div>
+                            <div class="meta-value">${sanitizeHTML(risk.riskOwner || 'Unassigned')}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Date Raised</div>
+                            <div class="meta-value">${sanitizeHTML(risk.dateRaised || 'N/A')}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Age</div>
+                            <div class="meta-value">${metrics.ageDays ? metrics.ageDays + ' days' : 'N/A'}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Review Date</div>
+                            <div class="meta-value">
+                                <span class="review-date ${metrics.reviewClass}">
+                                    ${sanitizeHTML(risk.reviewDate || 'Not set')}
+                                </span>
+                            </div>
+                        </div>
+                        ${risk.relatedRisks ? `
+                            <div class="meta-item">
+                                <div class="meta-label">Linked Risks</div>
+                                <div class="meta-value">${sanitizeHTML(risk.relatedRisks)}</div>
+                            </div>
+                        ` : ''}
+                        ${risk.riskCategory ? `
+                            <div class="meta-item">
+                                <div class="meta-label">Category</div>
+                                <div class="meta-value">${sanitizeHTML(risk.riskCategory)}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getScoreColor(score) {
+            if (!score) return '#999';
+            if (score <= 5) return '#28a745';
+            if (score <= 10) return '#ffc107';
+            if (score <= 15) return '#fd7e14';
+            return '#dc3545';
+        }
+
+        // =============================================
+        // SEARCH
+        // =============================================
+        function filterRisks(searchTerm) {
+            if (!searchTerm) {
+                filteredRisks = [...allRisks];
+            } else {
+                const term = searchTerm.toLowerCase();
+                filteredRisks = allRisks.filter(risk => {
+                    return Object.values(risk).some(value =>
+                        String(value).toLowerCase().includes(term)
+                    );
+                });
+            }
+            renderRisks(filteredRisks);
+        }
+
+        // =============================================
+        // EVENT HANDLERS
+        // =============================================
+        const searchInput = document.getElementById('searchInput');
+        const clearSearch = document.getElementById('clearSearch');
+
+        searchInput.addEventListener('input', debounce((e) => {
+            const value = e.target.value;
+            clearSearch.classList.toggle('visible', value.length > 0);
+            filterRisks(value);
+        }, CONFIG.DEBOUNCE_MS));
+
+        clearSearch.addEventListener('click', () => {
+            searchInput.value = '';
+            clearSearch.classList.remove('visible');
+            filterRisks('');
+            searchInput.focus();
+        });
+
+        document.getElementById('exportPdfButton').addEventListener('click', () => {
+            alert('PDF export requires a browser extension or server-side processing.\n\nFor now, please use the Print button (🖨️) and select "Save as PDF" as your printer.');
+        });
+
+        // =============================================
+        // INITIALIZATION
+        // =============================================
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                loadedRisks = await getAllRisksDB();
-                handleSort(); 
-            } catch (err) {
-                console.error(err);
-                document.getElementById('riskContainer').innerHTML = '<p style="color:red; text-align:center;">Error loading risks.</p>';
+                allRisks = await getAllRisksDB();
+                
+                // Sanitize all data
+                allRisks.forEach(risk => {
+                    Object.keys(risk).forEach(key => {
+                        if (typeof risk[key] === 'string') {
+                            risk[key] = sanitizeHTML(risk[key]);
+                        }
+                    });
+                });
+
+                filteredRisks = [...allRisks];
+                renderRisks(filteredRisks);
+            } catch (error) {
+                console.error('Error loading risks:', error);
+                document.getElementById('riskGrid').innerHTML = `
+                    <div class="empty-state">
+                        <h2>Error Loading Risks</h2>
+                        <p>Failed to load risk data. Please try refreshing the page.</p>
+                        <button onclick="window.location.reload()" style="margin-top: 20px;">
+                            Refresh Page
+                        </button>
+                    </div>`;
             }
         });
     </script>
